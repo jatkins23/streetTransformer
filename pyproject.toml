@@ -5,8 +5,18 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "dotenv>=0.9.9",
     "geopandas>=1.1.1",
+    "matplotlib>=3.10.3",
+    "ollama>=0.5.1",
     "osmnx>=2.0.5",
     "pandas>=2.3.1",
     "shapely>=2.1.1",
+]
+
+[dependency-groups]
+dev = [
+    "bs4>=0.0.2",
+    "folium>=0.20.0",
+    "torch>=2.7.1",
 ]
