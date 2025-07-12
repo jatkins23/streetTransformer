@@ -10,7 +10,9 @@ wheels/
 .venv
 
 # Data
-Data
+data
+cache
 
 # Environments
 .env
+tile2net
