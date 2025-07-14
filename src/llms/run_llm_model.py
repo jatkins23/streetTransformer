@@ -5,8 +5,7 @@ import json
 import pandas as pd
 
 
-def run_model(model, image_paths, show=False):
-    client = ollama.Client()
+def run_model(model, image_paths, stream=False, show=False):
     if not isinstance(image_paths, list):
         image_paths = [image_paths]
 
@@ -16,7 +15,16 @@ def run_model(model, image_paths, show=False):
     if show:
         pass
 
+    if stream:
+        response = _run_model_streaming(model, image_paths)
+    else:
+        response = _run_model_standard(model, image_paths)
+
+    return response
+
+def _run_model_standard(model, image_paths, show=False):
     # Define the model and the input prompt
+    
     response = ollama.chat(
         model = model,
         messages = [
@@ -26,7 +34,28 @@ def run_model(model, image_paths, show=False):
             }
         ]
     )
+        
     return response['message']['content']
+
+def _run_model_streaming(model, image_paths, show=False):
+    chunks = []
+    # Define the model and the input prompt
+    for chunk in ollama.chat(
+        model = model,
+        messages = [
+            {
+                'role': 'user',
+                'images': image_paths
+            }
+        ],
+        stream=True
+    ): 
+        text_piece = chunk['message']['content']
+        chunks.append(text_piece)
+
+    full_text = "".join(chunks)
+    return full_text
+
 
 
 def parse_args():
