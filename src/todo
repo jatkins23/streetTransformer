@@ -1,0 +1,25 @@
+data_load
+- load intersections from location (separate module?)
+
+**project_documents**
+- XX scrape docuemnts from the web
+- assign the documents to intersections and years
+
+**imagery**
+- load and parse imagery
+- assign imagery to year and borough
+- assign imagery to intersections
+  - stitch imagery together
+  - cut out intersection
+    - figure out width
+  
+**design_guidelines**
+- load documents into memory
+- digest
+
+**lmm_API** (maybe just a function in all three?)
+- a wrapper around an LLM API call
+
+--------------------------------------------------------
+
+Data download
