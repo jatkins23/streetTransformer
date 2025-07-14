@@ -14,26 +14,25 @@ script_dir = Path(__file__).resolve().parent
 project_root = script_dir.parent 
 sys.path.append(str(project_root))
 
-from data_load.load_intersections import load_location
-import process_imagery.join_and_stitch as jas
-from llms.run_llm_model import run_model
+#from src.data_load.load_intersections import load_location
+import src.process_imagery.join_and_stitch as jas
+from src.llms.run_llm_model import run_model
 
-
-load_dotenv()
+load_dotenv(override=True)
 DATA_PATH_STEM = os.getenv('DATA_PATH')
+print(DATA_PATH_STEM)
 
-Z_LEVEL = 20
-YEAR = 2024
+# Usage
+# python scripts/data_extraction_pipline.py -y 2016 -z 20 --location "Downtown Brooklyn, New York, USA" --outfile data/test_runs/downtown_bk/imagery/processed/refs/image_refs_z20_2016.csv
 
 def run_pipeline(location, year, z_level):
-    STATIC_REL_PATH = 'imagery/tiles/static/nyc'
-    STATIC_REL_PATH = f'tile2net_export/dt_bk/{year}/tiles/static/nyc/256_{z_level}'
+    STATIC_REL_PATH = f'imagery/raw_static/z{z_level}/{year}/'
     STATIC_PATH = os.path.join(DATA_PATH_STEM, STATIC_REL_PATH)
 
-    TILEREF_REL_PATH = f'tile2net_export/dt_bk/{year}/tiles/{year}_256_{z_level}_info.csv'
+    TILEREF_REL_PATH = f'imagery/raw_static/z{z_level}/{year}/{year}_256_info.csv'
     TILEREF_PATH = os.path.join(DATA_PATH_STEM, TILEREF_REL_PATH)
 
-    SAVE_FULLIMAGE_REL_PATH = f'test/dt_bk_test/intx_full_z{z_level}/{year}'
+    SAVE_FULLIMAGE_REL_PATH = f'imagery/processed/stitched/z{z_level}/{year}/'
     SAVE_FULLIMAGE_PATH = os.path.join(DATA_PATH_STEM, SAVE_FULLIMAGE_REL_PATH)
 
     nodes, images_df = jas.gather_location_imagery(
@@ -81,5 +80,6 @@ def parse_args():
 if __name__ == '__main__':
     location, year, z_level, outfile = parse_args()
     images_gdf = run_pipeline(location, year, z_level)
+    os.makedirs(Path(outfile).parent, exist_ok=True)
     images_gdf.to_csv(outfile)
-    
+

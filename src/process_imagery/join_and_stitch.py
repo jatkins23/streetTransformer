@@ -13,7 +13,8 @@ from pyproj import CRS
 from PIL import Image
 import matplotlib.pyplot as plt
 
-#sys.path.append(str(Path('../data_load/load_intersections.py').resolve().parent.parent))
+src_dir = Path(__file__).resolve().parent.parent
+sys.path.append(str(src_dir))
 from data_load.load_intersections import load_location
 
 load_dotenv()
