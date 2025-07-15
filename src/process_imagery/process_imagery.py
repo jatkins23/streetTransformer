@@ -61,19 +61,9 @@ def _calculate_ideal_buffer_width(node):
 def _set_buffer_width(buffer_width, nodes):
     if isinstance(buffer_width, int):
         buffer_value = buffer_width
-    else if buffer_width == 'variable':
+    elif buffer_width == 'variable':
         buffer_value = nodes.apply(_calculate_ideal_buffer_width, axis=1)
     else:
         raise ValueError(f'Unknown `buffer_value`: {buffer_width}')
     
     return buffer_value
-
-
-
-calculate_square_bounds
-
-nodes_buffered = nodes.copy()
-
-nodes_buffered['buffer_value'] = _set_buffer_width(buffer_width, nodes)
-
-nodes_buffered[['minx', 'miny', 'maxx', 'maxy']] = calculate_square_bounds()

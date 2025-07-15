@@ -1,6 +1,5 @@
 import ollama
 import argparse
-from PIL import Image
 import json
 import pandas as pd
 
@@ -8,8 +7,6 @@ import pandas as pd
 def run_model(model, image_paths, stream=False, show=False):
     if not isinstance(image_paths, list):
         image_paths = [image_paths]
-
-    path_resp = "\n\t".join(image_paths)
 
     # TODO: Display the images (and prompt?) if asked
     if show:

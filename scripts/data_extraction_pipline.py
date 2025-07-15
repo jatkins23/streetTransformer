@@ -4,10 +4,6 @@ from pathlib import Path
 from dotenv import load_dotenv
 import argparse
 
-import pandas as pd
-import geopandas as gpd
-import numpy as np
-import shapely
 
 # Import from src
 script_dir = Path(__file__).resolve().parent
@@ -16,7 +12,6 @@ sys.path.append(str(project_root))
 
 #from src.data_load.load_intersections import load_location
 import src.process_imagery.join_and_stitch as jas
-from src.llms.run_llm_model import run_model
 
 load_dotenv(override=True)
 DATA_PATH_STEM = os.getenv('DATA_PATH')

@@ -11,6 +11,7 @@ dependencies = [
     "ollama>=0.5.1",
     "osmnx>=2.0.5",
     "pandas>=2.3.1",
+    "ruff>=0.12.3",
     "shapely>=2.1.1",
 ]
 

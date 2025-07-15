@@ -2,7 +2,6 @@ import os
 import sys
 from pathlib import Path
 from dotenv import load_dotenv
-from typing import Tuple
 
 import numpy as np
 import pandas as pd
@@ -161,8 +160,8 @@ def _stitch_image(itx_df, show=False, verbose=False):
 
     if (len(vals_X) != 1) or (len(vals_Y) != 1):
         raise ValueError('Tile array is not a square: {vals_0} {vals_1}')
-    dimY = vals_X.pop()
-    dimX = vals_Y.pop() # Not necessary because its square but for completeness
+    dimX = vals_Y.pop()
+    #dimY = vals_X.pop() # Not necessary because its square but for completeness
 
     # Get list an array of all images
     tile_arrays = [np.array(Image.open(i)) for i in sorted_df['file_path']]

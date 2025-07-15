@@ -1,11 +1,9 @@
-import os
 import sys
 from pathlib import Path
 import json
 import argparse
 
 import geopandas as gpd
-import pandas as pd
 
 # Import from src
 script_dir = Path(__file__).resolve().parent
