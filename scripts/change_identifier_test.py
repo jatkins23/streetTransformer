@@ -21,37 +21,27 @@ def parse_args():
     )
 
     # Add image paths Argument
-    parser.add_argument(
-        '--startyear','-s',
-        required=True,
-        type=int
-    )
-    
-    parser.add_argument(
-        '--endyear','-e',
-        required=True,
-        type=int
-    )
+    parser.add_argument('--startyear','-s', required=True, type=int)
+    parser.add_argument('--endyear','-e', required=True, type=int)
 
     parser.add_argument(
-        '--zlevel','-z',
-        type=int,
-        default=20,
+        '--zlevel','-z', type=int, default=20,
         help='Zoom level for the imagery. 1-20. Generally you will want 19 or 20'
     )
-
-    parser.add_argument(
-        '--outfile','-o',
-        type=Path,
+    
+    # outfile
+    parser.add_argument('--outfile','-o', type=Path,
         help="A file path to write the results of the modeling to"
     )
 
+    # data_path
     parser.add_argument(
-        '--data_path','-d',
-        type=Path,
+        '--data_path','-d', type=Path,
         default='data/test_runs/downtown_bk',
         help='A file path to the root directory containing the data for this project'
     )
+
+    parser.add_argument('--verbose','-v',type=bool)
 
     args = parser.parse_args()
 
@@ -77,12 +67,17 @@ def _get_ref_route(root_path:Path, zlevel:int, year:int) -> Path:
 
     return root_path / "imagery" / "processed" / "refs" / file_name
 
-if __name__ == '__main__':
-    args = parse_args()
-
+def identify_changes(
+        data_path:Path,
+        zlevel:int,
+        startyear:int, 
+        endyear:int,
+        outfile:int,
+        verbose:bool
+):
     # Load the reference files
-    file_start = gpd.read_file(_get_ref_route(args.data_path, args.zlevel, args.startyear))
-    file_end = gpd.read_file(_get_ref_route(args.data_path, args.zlevel, args.endyear))
+    file_start = gpd.read_file(_get_ref_route(data_path, zlevel, startyear))
+    file_end = gpd.read_file(_get_ref_route(data_path, zlevel, endyear))
     
     # TODO: clean this up by using pd.read_csv and making the join more clear and less hacky
     combined_df = file_start.merge(file_end, left_on = ['field_1','name','geometry'], right_on=['field_1','name', 'geometry'], suffixes=['_start','_end']).rename(columns={'field_1': 'idx'})
@@ -95,13 +90,18 @@ if __name__ == '__main__':
                 print(e)
             
             cleaned_response = response.replace("`", '').replace('json','')
-            print(cleaned_response)
+            if verbose:
+                print(cleaned_response)
             try:
                 data = json.loads(cleaned_response)
-                with open(args.outfile, 'a+', encoding='utf-8') as f:
+                with open(outfile, 'a+', encoding='utf-8') as f:
                     f.write(f"{row['idx']}, {row['name']},  {json.dumps(data)}\n")
 
             except json.JSONDecodeError as e:
                 print(f"Failed to parse JSON {row['name']}: {e}")
 
-        
+if __name__ == '__main__':
+    args = parse_args()
+
+    identify_changes(**vars(args))
+    
