@@ -4,7 +4,7 @@ import json
 import pandas as pd
 
 
-def run_model(model, image_paths, stream=False, show=False):
+def run_model(model, image_paths, stream=True, show=False):
     if not isinstance(image_paths, list):
         image_paths = [image_paths]
 

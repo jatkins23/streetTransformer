@@ -31,7 +31,7 @@ def process_args():
     args = parser.parse_args()
     return args
 
-def _get_image_path(idx:int, year:int, z_level:int, root_dir:Path|str) -> tuple[str, Path]:
+def _get_image_path(idx:int, year:int, z_level:int, root_dir:Path|str) -> Tuple[str, Path]:
     ref_file_path = Path(root_dir).joinpath(f'image_refs_z{z_level}_{year}.csv')
     ref_df = pd.read_csv(ref_file_path)
     row = ref_df.loc[idx]
@@ -112,7 +112,7 @@ def compare_year_images(
         start_year:int, 
         end_year:int, # TODO: expand to any arbitrary number of images/years
         z_level:int=20, 
-        caption:Optional[Path]=None, 
+        caption:Optional[str]=None, 
         save_path:Optional[Path]=None, 
         show:bool=True,
         dpi:int = 300) -> None:

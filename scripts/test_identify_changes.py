@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 import json
 import argparse
+from typing import Optional
 
 import geopandas as gpd
 
@@ -17,7 +18,7 @@ from src.llms.run_llm_model import run_model
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Change comparison Script'
+        description='Change Identifier Test Script'
     )
 
     # Add image paths Argument
@@ -26,12 +27,12 @@ def parse_args():
 
     parser.add_argument(
         '--zlevel','-z', type=int, default=20,
-        help='Zoom level for the imagery. 1-20. Generally you will want 19 or 20'
+        help='Zoom level: 1-20. Generally you will want 19 or 20.'
     )
     
     # outfile
     parser.add_argument('--outfile','-o', type=Path,
-        help="A file path to write the results of the modeling to"
+        help="A file path to write the results of the modeling to."
     )
 
     # data_path
@@ -47,6 +48,7 @@ def parse_args():
 
     return args
 
+# TODO: Refactor
 def _get_ref_route(root_path:Path, zlevel:int, year:int) -> Path:
     """_summary_
 
@@ -72,8 +74,9 @@ def identify_changes(
         zlevel:int,
         startyear:int, 
         endyear:int,
-        outfile:int,
-        verbose:bool
+        outfile:Optional[Path]=None,
+        verbose:bool=False,
+        write:bool=False
 ):
     # Load the reference files
     file_start = gpd.read_file(_get_ref_route(data_path, zlevel, startyear))
@@ -84,6 +87,7 @@ def identify_changes(
     
     for row in combined_df.to_records():
         if Path(row['file_path_start']).is_file() and Path(row['file_path_end']).is_file():
+            # Refactor: to run_model_once()?
             try:
                 response = run_model('change_identifier', image_paths=[row['file_path_start'], row['file_path_end']], stream=True)
             except Exception as e:
@@ -92,6 +96,7 @@ def identify_changes(
             cleaned_response = response.replace("`", '').replace('json','')
             if verbose:
                 print(cleaned_response)
+
             try:
                 data = json.loads(cleaned_response)
                 with open(outfile, 'a+', encoding='utf-8') as f:
