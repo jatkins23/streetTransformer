@@ -47,35 +47,23 @@ def run_pipeline(location, year, z_level):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Run a pipeline for a location')
-    parser.add_argument(
-        '--location',
-        type=str,
-        required=True
-    )
-
-    parser.add_argument(
-        '-z','--zoom',
-        type=int,
-        default=19
-    )
-
-    parser.add_argument(
-        '-y','--year',
-        type=int,
-        default=2024
-    )
-
-    parser.add_argument(
-        '-o','--outfile',
-        type=str
-    )
+    
+    parser.add_argument('--location', type=str, required=True)
+    parser.add_argument('-z','--z_level', type=int, default=20)
+    parser.add_argument('-y','--year', type=int,default=2024)
+    parser.add_argument('-o','--outfile', type=str)
 
     args = parser.parse_args()
-    return args.location, args.year, args.zoom, args.outfile
+
+    return args
 
 if __name__ == '__main__':
-    location, year, z_level, outfile = parse_args()
-    images_gdf = run_pipeline(location, year, z_level)
-    os.makedirs(Path(outfile).parent, exist_ok=True)
-    images_gdf.to_csv(outfile)
+
+    args = parse_args()
+
+    images_gdf = run_pipeline(**vars(args))
+    
+    os.makedirs(Path(args.outfile).parent, exist_ok=True)
+    
+    images_gdf.to_csv(args.outfile)
 
