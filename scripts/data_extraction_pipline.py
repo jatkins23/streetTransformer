@@ -1,3 +1,8 @@
+
+# Example Usage
+# python scripts/data_extraction_pipline.py -y 2016 -z 20 --location "Downtown Brooklyn, New York, USA" --outfile data/test_runs/downtown_bk/imagery/processed/refs/image_refs_z20_2016.csv
+
+
 import os
 import sys
 from pathlib import Path
@@ -15,10 +20,6 @@ import src.process_imagery.join_and_stitch as jas
 
 load_dotenv(override=True)
 DATA_PATH_STEM = os.getenv('DATA_PATH')
-print(DATA_PATH_STEM)
-
-# Usage
-# python scripts/data_extraction_pipline.py -y 2016 -z 20 --location "Downtown Brooklyn, New York, USA" --outfile data/test_runs/downtown_bk/imagery/processed/refs/image_refs_z20_2016.csv
 
 def run_pipeline(location, year, z_level):
     STATIC_REL_PATH = f'imagery/raw_static/z{z_level}/{year}/'
