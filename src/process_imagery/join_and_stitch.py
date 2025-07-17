@@ -19,10 +19,10 @@ from data_load.load_intersections import load_location
 load_dotenv()
 
 STATIC_PATH = 'imagery/tiles/static/nyc/256_19'
-static_path = os.path.join(os.getenv('DATA_PATH'), STATIC_PATH)
+static_path = Path(str(os.getenv('DATA_PATH'))) / STATIC_PATH
 
 # Load
-def load_tile_reference(file_path:str|Path, crs:CRS='4326') -> gpd.GeoDataFrame:
+def load_tile_reference(file_path:str|Path, crs:CRS=CRS('4326')) -> gpd.GeoDataFrame:
     """
     Load tile metadata as a GeoDataFrame.
 
@@ -34,14 +34,16 @@ def load_tile_reference(file_path:str|Path, crs:CRS='4326') -> gpd.GeoDataFrame:
     Returns:
         GeoDataFrame with tile geometries.
     """
-    if not os.path.exists(file_path):
+    if not file_path:
         raise FileNotFoundError(file_path)
 
     tiles_df = pd.read_csv(file_path, index_col=0)
 
+    def create_bbox(x):
+        return geometry.box(x['topleft_x'], x['bottomright_y'], x['bottomright_x'], x['topleft_y']),
+    
     coordinates = tiles_df.apply(
-        lambda x:
-        geometry.box(x['topleft_x'], x['bottomright_y'], x['bottomright_x'], x['topleft_y']),
+        create_bbox,
         axis=1
     )
 
@@ -102,7 +104,7 @@ def complete_dataframe(input_slice:pd.DataFrame, column_names:list[str]=['xtile'
     return pd.MultiIndex.from_product(col_data, names=column_names).to_frame(index=False)
 
 def buffer_and_load(nodes_gdf: gpd.GeoDataFrame, tile_ref_gdf:gpd.GeoDataFrame, 
-                    static_path:str, buffer_width:int|str='variable', buffer_type:str='round') -> pd.DataFrame:
+                    static_path:Path, buffer_width:int|str='variable', buffer_type:str='round') -> pd.DataFrame:
     # TODO: Variable `buffer_width` depending on type
     """Create a buffer around each location, join it to the tiles, and extract the """
     # Set buffer value
@@ -192,18 +194,21 @@ def write_image(row, save_path):
         dir_path=save_path
     )
 
-def _write_image(img:np.ndarray, id:int|str, name:str, dir_path:str|Path) -> str|Path:
+def _write_image(img:np.ndarray, id:int|str, name:str, dir_path:Path) -> Path:
     if isinstance(img, np.ndarray):
         img = Image.fromarray(img)
     
-    if not os.path.exists(dir_path):
+    if not dir_path:
         os.makedirs(dir_path, exist_ok=True)
         print(f'Creating {dir_path}')
 
-    file_name = f'{id}_{name}.png'
-    img.save(os.path.join(dir_path, file_name))
+    outfile = f'{id}_{name}.png'
+    full_outfile = dir_path / outfile
 
-    return os.path.join(dir_path, file_name)
+    img.save(full_outfile)
+
+    return full_outfile
+
 
 def find_intersection_names(edges_gdf:gpd.GeoDataFrame) -> pd.Series:
     """Assign names to each intersection given the street names (edges) around them."""

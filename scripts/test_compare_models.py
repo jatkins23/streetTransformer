@@ -46,7 +46,6 @@ def parse_args():
     return args
     
 
-
 # For a given intersection, and set of year:
     # gather all imagery
     # combine into a list and export

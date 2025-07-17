@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 load_dotenv()
 
 STATIC_PATH = 'imagery/tiles/static/nyc/256_19'
-static_path = os.path.join(os.getenv('DATA_PATH'), STATIC_PATH)
+static_path = Path(str(os.getenv('DATA_PATH'))) / STATIC_PATH
 
 # Load the reference tile df
 def load_tile_reference(file_path:str|Path, crs:CRS='4326') -> gpd.GeoDataFrame:
