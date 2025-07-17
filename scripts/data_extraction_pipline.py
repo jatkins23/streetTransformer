@@ -19,7 +19,7 @@ sys.path.append(str(project_root))
 import src.process_imagery.join_and_stitch as jas
 
 load_dotenv(override=True)
-DATA_PATH_STEM = os.getenv('DATA_PATH')
+DATA_PATH_STEM = str(os.getenv('DATA_PATH'))
 
 def run_pipeline(location, year, z_level):
     STATIC_REL_PATH = f'imagery/raw_static/z{z_level}/{year}/'

@@ -1,7 +1,7 @@
 # Example Usage
 # python scripts/change_identifier_test.py -s 2016 -e 2024 -z 2020 --outfile tests/change_dentifier_2016_2024.csv
 
-import sys
+import os, sys
 from pathlib import Path
 import json
 import argparse
@@ -33,7 +33,7 @@ def parse_args():
     parser.add_argument('--outfile','-o', type=Path, help="A file path to write the results of the modeling to.")
     parser.add_argument(
         '--data_path','-d', type=Path,
-        default='data/test_runs/downtown_bk/',
+        default=Path(str(os.getenv('DATA_URL'))),
         help='A file path to the root directory containing the data for this project'
     )
     parser.add_argument(

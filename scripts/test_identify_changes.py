@@ -59,8 +59,8 @@ def identify_changes(
         write:bool=False
 ):
     # Load the reference files
-    file_start = gpd.read_file(_get_ref_route(data_path, zlevel, startyear))
-    file_end = gpd.read_file(_get_ref_route(data_path, zlevel, endyear))
+    file_start = gpd.read_file(get_imagery_reference_path(data_path, zlevel, startyear))
+    file_end = gpd.read_file(get_imagery_reference_path(data_path, zlevel, endyear))
     
     # TODO: clean this up by using pd.read_csv and making the join more clear and less hacky
     combined_df = file_start.merge(file_end, left_on = ['field_1','name','geometry'], right_on=['field_1','name', 'geometry'], suffixes=['_start','_end']).rename(columns={'field_1': 'idx'})
