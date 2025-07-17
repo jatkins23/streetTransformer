@@ -15,6 +15,7 @@ project_root = script_dir.parent  # assuming scripts and src are siblings
 sys.path.append(str(project_root))
 
 from src.llms.run_llm_model import run_model
+from src.utils.tiles import get_imagery_reference_path
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -47,27 +48,6 @@ def parse_args():
     args = parser.parse_args()
 
     return args
-
-# TODO: Refactor
-def _get_ref_route(root_path:Path, zlevel:int, year:int) -> Path:
-    """_summary_
-
-    Args:
-        root_path (Path): the data root directory path from the `data_path` argument
-
-    Returns:
-        Path: A path to the directory contianing the reference materials
-    """
-    
-    # TODO: better error handling for values that just don't exist in the database
-    if zlevel not in [19,20]:
-        raise ValueError(f'`zlevel` "{zlevel}" not available. Check source data')
-    if year not in range(2006, 2025, 2):
-        raise ValueError(f'`year` "{year}" not available. Check source data')
-    
-    file_name = f'image_refs_z{zlevel}_{year}.csv'
-
-    return root_path / "imagery" / "processed" / "refs" / file_name
 
 def identify_changes(
         data_path:Path,

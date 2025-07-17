@@ -79,6 +79,8 @@ def create_comparison_figure(
     axes[1].set_title(str(end_year))
 
     fig.suptitle(title, fontsize=16)
+    
+    fig.subplots_adjust(bottom=0.5)
 
     if caption:
         fig.text(

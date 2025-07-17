@@ -17,7 +17,8 @@ sys.path.append(str(project_root))
 
 from src.llms.run_llm_model import run_model
 from src.viz.compare_images import create_comparison_figure, load_images, save_figure
-from scripts.test_identify_changes import _get_ref_route
+
+from src.utils.tiles import assemble_location_imagery
 import matplotlib.pyplot as plt
 
 def parse_args():
@@ -28,7 +29,7 @@ def parse_args():
                         nargs=2, help='Two years to proces.s')
     parser.add_argument('--zlevel','-z', type=int, default=20,
                         help='Zoom level: 1-20. Generally you will want 19 or 20.')
-    parser.add_argument('--models','-m', type=str, nargs='+', help='TODO:')
+    parser.add_argument('--models','-m', required=True, type=str, nargs='+', help='TODO:')
     parser.add_argument('--outfile','-o', type=Path, help="A file path to write the results of the modeling to.")
     parser.add_argument(
         '--data_path','-d', type=Path,
@@ -52,26 +53,9 @@ def parse_args():
     # feed to the model
 
 # TODO: Refactor
-from scripts.test_identify_changes import _get_ref_route
+from src.utils.tiles import get_imagery_reference_path
 
 # TODO: refactor this into its own function that can be used elsewher
-def gather_location_imagery(location_id:int, root_path:Path, years:List[int], zlevel:int) -> Dict[int, Path]:
-    year_ref_paths = {year: _get_ref_route(root_path, zlevel, year) for year in years}
-    
-    # TODO: Get location_name, return? -- clean this up 
-    # location_name = year
-
-    year_image_paths = {}
-    for year, ref_path in year_ref_paths.items():
-        try:
-            image_path = pd.read_csv(ref_path).loc[location_id]['file_path']
-        except Exception as e:
-            print(f'{location_id}: {year}: {e})')
-            image_path = None
-        
-        year_image_paths[year] = image_path
-
-    return year_image_paths
 
 def run_all_models(
         models:List[str],
@@ -131,7 +115,7 @@ def compare_models(
     ) -> plt.Figure:
     
     # Gather all image paths
-    image_paths = gather_location_imagery(location_id, data_path, years, zlevel)
+    image_paths = assemble_location_imagery(location_id, data_path, years, zlevel)
     image_paths_list = list(image_paths.values())
 
     # Run all models
@@ -140,7 +124,7 @@ def compare_models(
     # Format Responses
     response_text = "-\n-\n-\n-\n" + format_response_generic(model_responses)
 
-    # Load Images -- TODO: Deal with this by refactoring _get_ref_route
+    # Load Images -- TODO: Deal with this by refactoring get_imagery_reference_path
     ref_dir_path = data_path / "imagery" / "processed" / "refs" 
     title, start_image, end_image = load_images(location_id, years[0], years[1], zlevel, ref_dir_path)
     
