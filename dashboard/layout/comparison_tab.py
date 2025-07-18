@@ -1,0 +1,125 @@
+from dash import html, dcc
+import dash_bootstrap_components as dbc
+from layout.components.location_picker import location_picker
+from config import AVAILABLE_YEARS, AVAILABLE_INTERSECTIONS, AVAILABLE_ZLEVELS, AVAILABLE_MODELS
+
+comparison_tab = dbc.Container([
+    html.H4("Comparison View", className="text-white"),
+
+    # Top control row: zoom and intersection
+    html.Div([
+        dcc.Dropdown(
+            id='comparison-zlevel-picker',
+            options=AVAILABLE_ZLEVELS,
+            placeholder='Z-Level',
+            searchable=False,
+            value=AVAILABLE_ZLEVELS[-1],
+            style={'width': '150px'}
+        ),
+        html.Div(style={'flex': 1}),  # spacer
+        location_picker('comparison-intersection-picker'),
+    ], style={
+        'display': 'flex',
+        'justifyContent': 'space-between',
+        'alignItems': 'center',
+        'marginBottom': '30px'
+    }),
+
+    # Year pickers and images in side-by-side "boxes"
+    html.Div([
+
+        # Left column: Before
+        html.Div([
+            dcc.Dropdown(
+                id='comparison-year-picker-before',
+                options=AVAILABLE_YEARS,
+                placeholder='Before Year',
+                searchable=True,
+                value=AVAILABLE_YEARS[0],
+                style={'width': '200px', 'margin': '0 auto 10px'}
+            ),
+            html.Img(id='comparison-image-before', style={
+                'height': '500px',
+                'border': '2px solid #ccc',
+                'padding': '10px',
+                'borderRadius': '8px',
+                'backgroundColor': '#f8f9fa',
+                'boxShadow': '0px 4px 10px rgba(0,0,0,0.1)'
+            })
+        ], style={
+            'display': 'flex',
+            'flexDirection': 'column',
+            'alignItems': 'center',
+            'padding': '20px',
+            'backgroundColor': '#ffffff',
+            'border': '1px solid #ddd',
+            'borderRadius': '10px',
+            'boxShadow': '0px 4px 12px rgba(0, 0, 0, 0.05)'
+        }),
+
+        # Right column: After
+        html.Div([
+            dcc.Dropdown(
+                id='comparison-year-picker-after',
+                options=AVAILABLE_YEARS,
+                placeholder='After Year',
+                searchable=True,
+                value=AVAILABLE_YEARS[-1],
+                style={'width': '200px', 'margin': '0 auto 10px'}
+            ),
+            html.Img(id='comparison-image-after', style={
+                'height': '500px',
+                'border': '2px solid #ccc',
+                'padding': '10px',
+                'borderRadius': '8px',
+                'backgroundColor': '#f8f9fa',
+                'boxShadow': '0px 4px 10px rgba(0,0,0,0.1)'
+            })
+        ], style={
+            'display': 'flex',
+            'flexDirection': 'column',
+            'alignItems': 'center',
+            'padding': '20px',
+            'backgroundColor': '#ffffff',
+            'border': '1px solid #ddd',
+            'borderRadius': '10px',
+            'boxShadow': '0px 4px 12px rgba(0, 0, 0, 0.05)'
+        })
+
+    ], style={
+        'display': 'flex',
+        'gap': '40px',
+        'justifyContent': 'center',
+        'marginBottom': '40px'
+    }),
+
+    # Model picker and button
+    html.Div([
+        dcc.Dropdown(
+            id='comparison-model-picker',
+            options=AVAILABLE_MODELS,
+            multi=True,
+            placeholder='Select Model(s)',
+            style={'width': '300px'}
+        ),
+        html.Button(
+            'Run Analysis',
+            id='comparison-run-models',
+            n_clicks=0,
+            style={'marginLeft': '20px'}
+        )
+    ], style={
+        'display': 'flex',
+        'justifyContent': 'center',
+        'alignItems': 'center',
+        'gap': '15px',
+        'marginBottom': '30px'
+    }),
+
+    dcc.Loading(
+        type="circle",  # or "dot", "graph"
+        color="#0d6efd",  # bootstrap primary
+        children=html.Div(id='model-output-container'),
+        style={'marginTop': '20px'}
+    )
+], className="mt-3")
