@@ -8,6 +8,6 @@ layout = dbc.Container([
 
     dcc.Tabs([
         dcc.Tab(label="Timeline", children=[timeline_tab], className="custom-tab", selected_className="custom-tab--selected"),
-        dcc.Tab(label="Comparison (Coming Soon)", children=[comparison_tab], className="custom-tab", selected_className="custom-tab--selected"),
+        dcc.Tab(label="Comparison", children=[comparison_tab], className="custom-tab", selected_className="custom-tab--selected"),
     ], className="bg-secondary text-light", style={"borderRadius": "5px"}),
 ], fluid=True)

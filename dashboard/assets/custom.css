@@ -10,3 +10,16 @@
   color: #fff;
   font-weight: bold;
 }
+.accordion-item .accordion-header {
+    background-color: #ab82c5;
+    border: 1px solid  #57058c;
+    color: #efefef;
+}
+
+/* Active (expanded) accordion item */
+.accordion-item .accordion-button:not(.collapsed) {
+    background-color: #57058c;
+    color: #efefef;
+}
+
+

@@ -3,7 +3,7 @@ from dash import Input, Output, html, State
 from config import DATA_PATH, AVAILABLE_YEARS, AVAILABLE_INTERSECTIONS
 from pathlib import Path
 from config import assemble_location_imagery
-from callbacks.utils import encode_image
+from callbacks.utils import encode_image, render_json_list
 import json
 
 def register_compare_callbacks(app):
@@ -28,16 +28,16 @@ def register_compare_callbacks(app):
                 print(f'Running {model_name} model..')
                 response = run_model(model_name, image_paths=list(image_paths.values()), stream=True)
                 cleaned_response = response.replace("`", '').replace('json','')
-                # json.loads()
+                json_response = json.dumps(json.loads(cleaned_response), indent=2)
             except Exception as e:
-                cleaned_response = f'Error ({e})'
+                json_response = f'Error ({e})'
 
-            responses.append(f'{model_name}: {cleaned_response}')
+            responses.append(json_response)
 
             #(DATA_PATH, zlevel, startyear=year_before, endyear=year_after, outfile=None, verbose=False, write=False)
-            
-        
-        return "\n".join(responses)# return html.Div([
+        print(responses)            
+        output = render_json_list(responses, labels=models)
+        return output# return html.Div([
         #     html.P(f"Intersection: {intersection}"),
         #     html.P(f"Year: {year}"),
         #     html.P(f"Models: {', '.join(models)}")

@@ -5,7 +5,7 @@ dashboard_dir = Path(__file__).resolve().parent
 sys.path.append(str(dashboard_dir.parent))
 
 from src.utils.constants import DATA_PATH, REF_FILE_RELATIVE_PATH, REF_FILE_PATTERN, AVAILABLE_YEARS, AVAILABLE_ZLEVELS, AVAILABLE_MODELS
-from src.utils.image_paths import get_imagery_reference_path
+from src.utils.image_paths import get_imagery_reference_path, assemble_location_imagery
 
 #DATA_PATH = Path('..') / DATA_PATH
 if not DATA_PATH.is_dir():
