@@ -1,6 +1,6 @@
 from dash import html, dcc
 import dash_bootstrap_components as dbc
-from layout.components.location_picker import location_picker
+from layout.components.ui_elements import location_picker
 from config import AVAILABLE_YEARS
 
 timeline_tab = dbc.Container([
