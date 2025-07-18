@@ -9,10 +9,7 @@ from src.utils.image_paths import get_imagery_reference_path
 
 #DATA_PATH = Path('..') / DATA_PATH
 if not DATA_PATH.is_dir():
-    print(f'{DATA_PATH} doesnt exist')
-else:
-    print(f'{DATA_PATH} exists')
-
+    raise FileNotFoundError(f'{DATA_PATH} doesnt exist')
 
 ref_file = get_imagery_reference_path(DATA_PATH, AVAILABLE_ZLEVELS[-1], AVAILABLE_YEARS[-1])
 INTERSECTIONS = pd.read_csv(ref_file)
