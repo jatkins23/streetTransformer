@@ -1,3 +1,6 @@
+# example usage:
+#   python src/viz/compare_images.py -s 2008 -e 2024 -i 0 -z 20
+
 import os
 import argparse
 from pathlib import Path
@@ -14,9 +17,7 @@ load_dotenv(override=True)
 DATA_PATH = str(os.getenv('DATA_PATH'))
 REF_REL_PATH = 'imagery/processed/refs/'
 
-# example usage:
-#   python src/viz/compare_images.py -s 2008 -e 2024 -i 0 -z 20
-
+from .utils import get_image_path, load_images
 
 def process_args():
     parser = argparse.ArgumentParser()
@@ -30,33 +31,6 @@ def process_args():
 
     args = parser.parse_args()
     return args
-
-def _get_image_path(idx:int, year:int, z_level:int, root_dir:Path|str) -> Tuple[str, Path]:
-    ref_file_path = Path(root_dir).joinpath(f'image_refs_z{z_level}_{year}.csv')
-    ref_df = pd.read_csv(ref_file_path)
-    row = ref_df.loc[idx]
-    try:
-        file_path = row['file_path']
-        intx_name = row['name']
-        return intx_name, file_path
-    except Exception as e:
-        print(e)
-
-def load_images(
-    intx_id: int,
-    start_year: int,
-    end_year: int,
-    z_level: int,
-    ref_dir_path: Path
-) -> Tuple[str, Image.Image, Image.Image]:
-    """
-    Load the start and end year images for the given intersection.
-    """
-    title, start_image_path = _get_image_path(intx_id, start_year, z_level, ref_dir_path)
-    _, end_image_path = _get_image_path(intx_id, end_year, z_level, ref_dir_path)
-    start_image = Image.open(start_image_path)
-    end_image = Image.open(end_image_path)
-    return title, start_image, end_image
 
 def create_comparison_figure(
     title: str,

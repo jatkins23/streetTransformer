@@ -18,6 +18,7 @@ from data_load.load_intersections import load_location
 
 load_dotenv()
 
+# TODO: fix
 STATIC_PATH = 'imagery/tiles/static/nyc/256_19'
 static_path = Path(str(os.getenv('DATA_PATH'))) / STATIC_PATH
 

@@ -15,7 +15,7 @@ project_root = script_dir.parent  # assuming scripts and src are siblings
 sys.path.append(str(project_root))
 
 from src.llms.run_llm_model import run_model
-from src.utils.tiles import get_imagery_reference_path
+from src.utils.image_paths import get_imagery_reference_path
 
 def parse_args():
     parser = argparse.ArgumentParser(

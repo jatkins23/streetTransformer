@@ -1,5 +1,7 @@
 from pathlib import Path
 from typing import List, Dict
+import os
+from .constants import REF_FILE_RELATIVE_PATH, REF_FILE_PATTERN, AVAILABLE_ZLEVELS, AVAILABLE_YEARS
 
 import pandas as pd
 def get_imagery_reference_path(root_path:Path, zlevel:int, year:int) -> Path:
@@ -15,14 +17,14 @@ def get_imagery_reference_path(root_path:Path, zlevel:int, year:int) -> Path:
     """
     
     # TODO: better error handling for values that just don't exist in the database
-    if zlevel not in [19,20]:
+    if zlevel not in AVAILABLE_ZLEVELS:
         raise ValueError(f'`zlevel` "{zlevel}" not available. Check source data')
-    if year not in range(2006, 2025, 2):
+    if year not in AVAILABLE_YEARS:
         raise ValueError(f'`year` "{year}" not available. Check source data')
     
-    file_name = f'image_refs_z{zlevel}_{year}.csv'
+    file_name = REF_FILE_PATTERN.format(zlevel=zlevel, year=year)
 
-    return root_path / "imagery" / "processed" / "refs" / file_name
+    return root_path / REF_FILE_RELATIVE_PATH / file_name
 
 def assemble_location_imagery(location_id:int, root_path:Path, years:List[int], zlevel:int) -> Dict[int, Path]:
     """Assemble relevant imagery for each location

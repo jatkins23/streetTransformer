@@ -18,7 +18,7 @@ sys.path.append(str(project_root))
 from src.llms.run_llm_model import run_model
 from src.viz.compare_images import create_comparison_figure, load_images, save_figure
 
-from src.utils.tiles import assemble_location_imagery
+from src.utils.image_paths import assemble_location_imagery
 import matplotlib.pyplot as plt
 
 def parse_args():
@@ -52,7 +52,7 @@ def parse_args():
     # feed to the model
 
 # TODO: Refactor
-from src.utils.tiles import get_imagery_reference_path
+from src.utils.image_paths import get_imagery_reference_path
 
 # TODO: refactor this into its own function that can be used elsewher
 
