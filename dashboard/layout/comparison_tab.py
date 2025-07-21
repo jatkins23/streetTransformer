@@ -1,7 +1,7 @@
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 from layout.components.ui_elements import location_picker
-from config import AVAILABLE_YEARS, AVAILABLE_INTERSECTIONS, AVAILABLE_ZLEVELS, AVAILABLE_MODELS
+from setup import AVAILABLE_YEARS, AVAILABLE_INTERSECTIONS, AVAILABLE_ZLEVELS, AVAILABLE_MODELS
 
 comparison_tab = dbc.Container([
     html.H4("Comparison View", className="text-white"),
@@ -94,6 +94,7 @@ comparison_tab = dbc.Container([
     }),
 
     # Model picker and button
+    html.Div([html.H2('Analyze Changes')]),
     html.Div([
         dcc.Dropdown(
             id='comparison-model-picker',

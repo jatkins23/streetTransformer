@@ -1,8 +1,8 @@
 from dash import Input, Output, html
-from config import DATA_PATH, AVAILABLE_YEARS, AVAILABLE_INTERSECTIONS
+from setup import DATA_PATH, AVAILABLE_YEARS, AVAILABLE_INTERSECTIONS
 from PIL import Image
 from pathlib import Path
-from config import assemble_location_imagery
+from setup import assemble_location_imagery
 from callbacks.utils import serve_image, encode_image
 
 def register_timeline_callbacks(app):

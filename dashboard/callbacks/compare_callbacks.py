@@ -1,8 +1,8 @@
 from src.llms.run_llm_model import run_model#(model, image_paths, stream=True, show=False)
 from dash import Input, Output, html, State
-from config import DATA_PATH, AVAILABLE_YEARS, AVAILABLE_INTERSECTIONS
+from setup import DATA_PATH, AVAILABLE_YEARS, AVAILABLE_INTERSECTIONS
 from pathlib import Path
-from config import assemble_location_imagery
+from setup import assemble_location_imagery
 from callbacks.utils import encode_image, render_json_list
 import json
 

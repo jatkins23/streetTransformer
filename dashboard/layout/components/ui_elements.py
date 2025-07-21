@@ -1,4 +1,4 @@
-from config import AVAILABLE_INTERSECTIONS
+from setup import AVAILABLE_INTERSECTIONS
 from dash import dcc
 
 DEFAULT_OPTIONS = [{"label": f'{value}_{label}', "value": value} for label, value in AVAILABLE_INTERSECTIONS.items()]

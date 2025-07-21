@@ -4,7 +4,7 @@ from layout.timeline_tab import timeline_tab
 from layout.comparison_tab import comparison_tab
 
 layout = dbc.Container([
-    html.H1("Intersection Analysis Dashboard", className="my-4 text-center text-white"),
+    html.H1("Urban Design Change Dashboard", className="my-4 text-center text-white"),
 
     dcc.Tabs([
         dcc.Tab(label="Timeline", children=[timeline_tab], className="custom-tab", selected_className="custom-tab--selected"),
