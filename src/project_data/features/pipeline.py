@@ -1,6 +1,8 @@
 import os, sys
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
+import argparse
+
 
 import pandas as pd
 import geopandas as gpd
@@ -30,6 +32,14 @@ FEATURE_METADATA = {
     'traffic_calming': {'file_path': 'VZV_Turn_Traffic_Calming_20250721.csv', 'load_method': 'standard', 'clean_method': 'clean_traffic_calming', 'shorthand': 'calm', 'date_col': 'installdate'}
 }
 
+def buffer_locations(location_nodes, buffer_width=100, crs='EPSG:2263'): #crs:CRS='EPSG'):
+    location_nodes['buffer'] = location_nodes.to_crs(crs).buffer(buffer_width)
+    location_buffers = location_nodes.set_geometry('buffer')
+
+    return location_buffers
+
+
+# TODO the `[load|clean|summarize]_all_files` functions are extemely duplicative and can be 
 def load_all_files(feat_metadata:Dict[str, Dict], root_data_path:Path, silent:bool=False) -> Dict[str, gpd.GeoDataFrame]:
 
     loaded_gdfs = {}
@@ -80,13 +90,7 @@ def clean_all_files(loaded_gdfs:Dict[str, gpd.GeoDataFrame], feat_metadata:Dict[
     
     return cleaned_gdfs
 
-def buffer_locations(location_nodes, buffer_width=100, crs='EPSG:2263'): #crs:CRS='EPSG'):
-    location_nodes['buffer'] = location_nodes.to_crs(crs).buffer(buffer_width)
-    location_buffers = location_nodes.set_geometry('buffer')
-
-    return location_buffers
-
-def summarize_features(location_buffers:gpd.GeoDataFrame, cleaned_gdfs_p:Dict[str, gpd.GeoDataFrame], 
+def summarize_all_features(location_buffers:gpd.GeoDataFrame, cleaned_gdfs_p:Dict[str, gpd.GeoDataFrame], 
                        features_to_summarize:List[str], silent:bool=False) -> gpd.GeoDataFrame:
     summarized_gdf = location_buffers
 
@@ -112,7 +116,7 @@ def summarize_features(location_buffers:gpd.GeoDataFrame, cleaned_gdfs_p:Dict[st
 
     return summarized_gdf 
 
-def pipeline(location:str, silent:bool=False):
+def pipeline(location:str, silent:bool=False, outfile:Optional[Path|str]=None):
     # Load locations
     nodes, _ = load_location(location) # TODO: add `silent` 
 
@@ -126,13 +130,24 @@ def pipeline(location:str, silent:bool=False):
     
     location_buffers = buffer_locations(nodes)
 
+    summarized_gdf = summarize_all_features(location_buffers, cleaned_gdfs_p, features_to_summarize=['bike_rtes','bus_lanes','ped_plaza','traffic_calming'])
 
-    summarize_features(location_buffers, cleaned_gdfs_p, features_to_summarize=['bike_rtes','bus_lanes','ped_plaza','traffic_calming'])
+    # If outfile:
+    if outfile:
+        summarized_gdf.to_csv(outfile, index=True)
 
-    return location_buffers
+    return summarized_gdf
 
 if __name__ == '__main__':
-    print('test')
-    print(pipeline('Downtown Brooklyn, New York, USA'))
+    parser = argparse.ArgumentParser(description='Collect Project Data from Project Files')
+
+    parser.add_argument('location', type=str, help="Specify location")
+    parser.add_argument('-s','--silent', default=False, help="Run in silent mode (minimize console output)")
+    parser.add_argument('-o','--outfile', type=Path, help="Path to the output file")
+
+    args = parser.parse_args()
+    
+    output = pipeline(**vars(args))
+    print(output)
     
 
