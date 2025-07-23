@@ -1,10 +1,11 @@
 from src.llms.run_llm_model import run_model#(model, image_paths, stream=True, show=False)
 from dash import Input, Output, html, State
-from setup import DATA_PATH, AVAILABLE_YEARS, AVAILABLE_INTERSECTIONS
+from setup import DATA_PATH, AVAILABLE_YEARS, AVAILABLE_INTERSECTIONS, PROJDATA_FEATURES
 from pathlib import Path
 from setup import assemble_location_imagery
 from callbacks.utils import encode_image, render_json_list
 import json
+import pandas as pd
 
 def register_compare_callbacks(app):
     @app.callback(
@@ -35,13 +36,10 @@ def register_compare_callbacks(app):
             responses.append(json_response)
 
             #(DATA_PATH, zlevel, startyear=year_before, endyear=year_after, outfile=None, verbose=False, write=False)
-        print(responses)            
+        #print(responses)
         output = render_json_list(responses, labels=models)
-        return output# return html.Div([
-        #     html.P(f"Intersection: {intersection}"),
-        #     html.P(f"Year: {year}"),
-        #     html.P(f"Models: {', '.join(models)}")
-        # ])
+        
+        return output
     
     @app.callback(
             Output('comparison-image-before', 'src'),
@@ -64,4 +62,14 @@ def register_compare_callbacks(app):
         image_after = encode_image(path_after)
 
         return image_before, image_after
+    
+    @app.callback(
+        Output('dynamic-table', 'data'),
+        Input('comparison-intersection-picker', 'value')
+    )
+    def get_data(location_id):
+        output_records = PROJDATA_FEATURES.loc[[location_id]][['n_bike','n_bus','n_plaza','n_calm']].to_dict('records')
+        print(output_records)
+        #print(output_records.to_dict('records'))
+        return output_records
         

@@ -17,3 +17,5 @@ INTERSECTIONS = pd.read_csv(ref_file)
 INTERSECTIONS[INTERSECTIONS['name'].notna()]
 values = [int(x) for x in INTERSECTIONS.index.values]
 AVAILABLE_INTERSECTIONS = dict(zip(INTERSECTIONS['name'], values))
+
+PROJDATA_FEATURES = pd.read_csv(DATA_PATH / 'project_data/features.csv', index_col=0)

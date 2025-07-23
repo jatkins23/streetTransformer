@@ -1,7 +1,7 @@
-from dash import html, dcc
-import dash_bootstrap_components as dbc
+from dash import html, dcc, dash_table, Dash
 from layout.components.ui_elements import location_picker
-from setup import AVAILABLE_YEARS, AVAILABLE_INTERSECTIONS, AVAILABLE_ZLEVELS, AVAILABLE_MODELS
+import dash_bootstrap_components as dbc
+from setup import AVAILABLE_YEARS, AVAILABLE_INTERSECTIONS, AVAILABLE_ZLEVELS, AVAILABLE_MODELS, PROJDATA_FEATURES
 
 comparison_tab = dbc.Container([
     html.H4("Comparison View", className="text-white"),
@@ -91,6 +91,28 @@ comparison_tab = dbc.Container([
         'gap': '40px',
         'justifyContent': 'center',
         'marginBottom': '40px'
+    }),
+
+    # Project Data Summary
+    html.Div([html.H3('Project Data (In Progress)')]),
+    html.Div([
+        dash_table.DataTable(
+            id="dynamic-table",
+            columns=[{"name": col, "id": col} for col in ['n_bike','n_bus','n_plaza','n_calm']],
+            data=[],  # Start empty
+            style_table={"width": "50%"},
+            style_cell={"textAlign": "center"},
+            style_header={"fontWeight": "bold"}
+        )
+    ], style={
+        "display": "flex",
+        "justifyContent": "center",
+        "alignItems": "center",
+        "flexDirection": "column",
+        "width": "100%",
+        "padding": "20px",
+        "border": "1px solid #ccc",
+        "borderRadius": "8px"
     }),
 
     # Model picker and button
