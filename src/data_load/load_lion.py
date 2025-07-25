@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 import geopandas as gpd
+from typing import Optional
+import osmnx as ox
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -17,14 +19,24 @@ lion_lion = gpd.read_file(root_path / LION_PATH / 'lion.gdb', layer='lion')
 
 # lion_nodes.explore()
 
-all_intersections = lion_nodes.merge(
-    lion_node_names
-        .groupby('NodeId')['StreetName']
-        .apply(' & '.join)
-        .reset_index(),
-    how='left',
-    left_on = 'NODEID', right_on = 'NodeId',
-    indicator=True
-)[['StreetName','NODEID','geometry', 'GLOBALID']].set_index('NODEID')
+def load_location(location:str, outfile:Optional[Path]=None) -> gpd.GeoDataFrame:
+    all_intersections = lion_nodes.merge(
+        lion_node_names
+            .groupby('NodeId')['StreetName']
+            .apply(' & '.join)
+            .reset_index(),
+        how='left',
+        left_on = 'NODEID', right_on = 'NodeId',
+        indicator=True
+    )[['StreetName','NODEID','geometry', 'GLOBALID']].set_index('NODEID')
 
-all_intersections.to_csv(root_path / DATA_PATH.parent / 'nyc' / 'lion_intersections.csv', index=False)
+    bounds = ox.geocode.geocode_to_gdf(location)
+
+    intersections_clipped = all_intersections.clip(
+        bounds.to_crs(all_intersections.crs)
+    )
+
+    if outfile:
+        intersections_clipped.to_csv(outfile, index=False)
+
+    return intersections_clipped
