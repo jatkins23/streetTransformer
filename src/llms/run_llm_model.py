@@ -78,6 +78,8 @@ def parse_args():
         default='walkability_rater',
         help='Choose a model to use to score these images'
     )
+
+    parser.add_argument('--outfile','-o', default=None, help='File to write results to')
     # Parse Args
     args = parser.parse_args()
 
@@ -88,7 +90,7 @@ def parse_args():
     if not image_list:
         image_list = _parse_filelist(args.imagelist)
 
-    return args.model, image_list
+    return args.model, image_list, args.outfile
 
 def _parse_filelist(filepath):
     files = {}
@@ -101,34 +103,43 @@ def _parse_filelist(filepath):
     return files
 
 if __name__ == '__main__':
-    model, image_list = parse_args()
+    model, image_list, outfile = parse_args()
 
-    OUTPUT_FILE = 'data/test/output'
-    with open(OUTPUT_FILE, 'w+') as f:
-        f.write('\n\nTest Run __\n\n')
-        f.write('name, score, fix\n')
+    if outfile:
+        with open(outfile, 'w+') as f:
+            f.write('\n\nTest Run __\n\n')
+            f.write('name, score, fix\n')
 
     results = {}
-    for name, img_paths in image_list.items():
-        output = run_model(model, img_paths)
-        # Clean json
-        output = output.replace('json','').replace('`', '').strip()
-        # data
-        data = json.loads(output)
-        try:
-            #print(data)
-            if isinstance(data, list):
-                data = data[0]
-            #print(data)
-            results[name] = data
+    # Run model
+    output = run_model(model, image_list)
+    # Clean json
+    output = output.replace('json','').replace('`', '').strip()
+    
+    #data = json.loads(output)
+    print(data)
+
+    # for name, img_paths in image_list.items():
+    #     output = run_model(model, img_paths)
+    #     # Clean json
+    #     output = output.replace('json','').replace('`', '').strip()
+    #     # data
+    #     data = json.loads(output)
+    #     try:
+    #         #print(data)
+    #         if isinstance(data, list):
+    #             data = data[0]
+    #         #print(data)
+    #         results[name] = data
             
-            # Make it more readable
-            result_string = f"{name}, {data.values()[0]}, {data.values()[1]}"
-            with open(OUTPUT_FILE, 'a') as f:
-                f.write(f'{result_string}\n')
-            print(result_string)
-        except Exception as e:
-            print(f'{name}: {data} -- {e}')
+    #         # Make it more readable
+    #         result_string = f"{name}, {data.values()[0]}, {data.values()[1]}"
+    #         if outfile:
+    #             with open(outfile, 'a') as f:
+    #                 f.write(f'{result_string}\n')
+    #         print(result_string)
+    #     except Exception as e:
+    #         print(f'{name}: {data} -- {e}')
 
     print(pd.DataFrame(results))
     print('Done!')
