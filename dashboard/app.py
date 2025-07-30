@@ -38,6 +38,7 @@ app = Dash(__name__, external_stylesheets=[dbc.themes.CYBORG])
 # Layout
 app.layout = main_layout
 
+# Callbacks
 register_timeline_callbacks(app)
 register_compare_callbacks(app)
 
