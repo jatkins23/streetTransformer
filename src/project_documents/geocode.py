@@ -106,7 +106,8 @@ def digest_document(doc_path):
     # if not in VALID_FILE_EXTENSIONS:
         # convert_document(doc_path, doc_path.suffix.lower())
     # output = get_locations_from_document()
-    # output['intersection'].apply(geocode_single_text_location, axis=1)
+    # geocded_details = output['intersection'].apply(geocode_single_text_location, axis=1)
+    # 
 
     pass
 

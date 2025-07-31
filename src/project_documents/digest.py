@@ -35,7 +35,7 @@ def ollama_process_pdf(model_name: str, pdf_path: Path):
 
     # Loop through chunks
     stream = chat(
-        model="llama2",
+        model=model_name,
         messages=[{"role": "user", "content": "Summarize the following text:\n\n" + chunks[0]}],
         stream=True
     )

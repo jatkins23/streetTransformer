@@ -21,7 +21,6 @@ def run_model(model, image_paths, stream=True, show=False):
 
 def _run_model_standard(model, image_paths, show=False):
     # Define the model and the input prompt
-    
     response = ollama.chat(
         model = model,
         messages = [
@@ -102,6 +101,9 @@ def _parse_filelist(filepath):
 
     return files
 
+def _convert_pdf_to_image():
+    return
+
 if __name__ == '__main__':
     model, image_list, outfile = parse_args()
 
@@ -116,7 +118,7 @@ if __name__ == '__main__':
     # Clean json
     output = output.replace('json','').replace('`', '').strip()
     
-    #data = json.loads(output)
+    data = json.loads(output)
     print(data)
 
     # for name, img_paths in image_list.items():
