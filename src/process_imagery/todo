@@ -1,6 +1,0 @@
-Pipeline Re-design Process:
-# Load bounds
-# Pass nodes to make bounds
-# Pass bounds to assigner to assign tiles
-# Pass assigned tiles to stitcher
-# Pass stitched images and bounds to cut out

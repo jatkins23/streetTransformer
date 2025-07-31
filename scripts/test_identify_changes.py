@@ -14,8 +14,8 @@ script_dir = Path(__file__).resolve().parent
 project_root = script_dir.parent  # assuming scripts and src are siblings
 sys.path.append(str(project_root))
 
-from src.llms.run_llm_model import run_model
-from src.utils.image_paths import get_imagery_reference_path
+from src.streetTransformer.llms.run_llm_model import run_model
+from src.streetTransformer.utils.image_paths import get_imagery_reference_path
 
 def parse_args():
     parser = argparse.ArgumentParser(

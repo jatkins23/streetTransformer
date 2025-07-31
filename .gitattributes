@@ -1,0 +1,5 @@
+# Mark Jupyter Notebook files as documentation (optional)
+*.ipynb linguist-documentation
+
+# Ensure .py files count as Python (default, but explicit here)
+*.py linguist-language=Python

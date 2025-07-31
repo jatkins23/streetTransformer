@@ -1,0 +1,20 @@
+FROM gemma3
+
+# `temperature`: higher makes the model respond more creatively
+PARAMETER temperature .6
+# `mirostat_tau`: lower value results in more focused and coherent text
+PARAMETER mirostat_tau 1.0
+# `seed`: setting a seed makes it deterministic
+PARAMETER seed 23
+# 
+
+# set the system message
+SYSTEM """
+You are a city employee tasked with analyzing intersections. 
+Your goal is to look at a satellite image and determine if it has a bike lane and give it a score of:
+* 0: if it has no bike lane
+* 1: if it has a singular lane on 1 street
+* 2: if it has bike lane on all streets.
+
+Please respond exclusively with this number.
+"""

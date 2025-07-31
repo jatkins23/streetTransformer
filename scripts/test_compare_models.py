@@ -13,12 +13,13 @@ import pandas as pd
 # Import from src
 script_dir = Path(__file__).resolve().parent
 project_root = script_dir.parent  # assuming scripts and src are siblings
+print(f"Treating '{project_root}' as `project_root`")
 sys.path.append(str(project_root))
 
-from src.llms.run_llm_model import run_model
-from src.viz.compare_images import create_comparison_figure, load_images, save_figure
+from src.streetTransformer.llms.run_llm_model import run_model
+from src.streetTransformer.viz.compare_images import create_comparison_figure, load_images, save_figure
 
-from src.utils.image_paths import assemble_location_imagery
+from src.streetTransformer.utils.image_paths import assemble_location_imagery
 import matplotlib.pyplot as plt
 
 def parse_args():
@@ -52,7 +53,7 @@ def parse_args():
     # feed to the model
 
 # TODO: Refactor
-from src.utils.image_paths import get_imagery_reference_path
+from src.streetTransformer.utils.image_paths import get_imagery_reference_path
 
 # TODO: refactor this into its own function that can be used elsewher
 

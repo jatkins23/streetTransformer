@@ -15,8 +15,8 @@ script_dir = Path(__file__).resolve().parent
 project_root = script_dir.parent 
 sys.path.append(str(project_root))
 
-#from src.data_load.load_intersections import load_location
-import src.process_imagery.join_and_stitch as jas
+#from preprocessing.load_intersections import load_location
+import preprocessing.imagery.join_and_stitch as jas
 
 load_dotenv(override=True)
 DATA_PATH_STEM = Path(str(os.getenv('DATA_PATH')))

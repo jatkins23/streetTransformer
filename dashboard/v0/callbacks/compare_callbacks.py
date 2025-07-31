@@ -1,4 +1,4 @@
-from src.llms.run_llm_model import run_model#(model, image_paths, stream=True, show=False)
+from src.streetTransformer.llms.run_llm_model import run_model#(model, image_paths, stream=True, show=False)
 from dash import Input, Output, html, State
 from setup import DATA_PATH, AVAILABLE_YEARS, AVAILABLE_INTERSECTIONS
 from pathlib import Path

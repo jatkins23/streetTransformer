@@ -48,10 +48,10 @@ For loading the intersections. Contains two modules, one that loads intersection
 Contains one .py file which mainly just interacts with `ollama`. 
 
 #### Usage
-    from src.llms.run_llm_model import run_model
+    from src.streetTransformer.llms.run_llm_model import run_model
     run_model([model_name], [list_of_image_paths], stream=False)
 
-Can also run it via command line. Check `src.llms.run_llm_model` source code to see options. 
+Can also run it via command line. Check `src.streetTransformer.llms.run_llm_model` source code to see options. 
 
 **Note: need to first set up the models using [ollama](https://ollama.com/) and build each model manually using `ollama create [model_name] -f [link_to_modelfile]`
 
