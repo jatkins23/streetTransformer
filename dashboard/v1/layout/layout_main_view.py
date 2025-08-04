@@ -4,30 +4,20 @@ from dash import html, dcc
 import dash_bootstrap_components as dbc
 import dash_leaflet as dl
 
+
 script_dir = Path(__file__).resolve()
 dashboard_root = script_dir.parent.parent
 sys.path.append(str(dashboard_root))
 
+from layout.components.main_input import input_view_geocode, input_view_gmailchips
 from setup import YEARS, ZLEVEL, TILE_URL_TEMPLATE, INITIAL_CENTER, INITIAL_ZOOM
 
 def main_card():
     return dbc.Card(
         color="dark", inverse=True,
         children=dbc.CardBody([
-            html.Div([
-                html.H2('Select a Location...'),
-                dcc.Input(
-                    id="search-input",
-                    type="text",
-                    placeholder="Enter address...",
-                    style={"width": "70%"},
-                    className="bg-secondary text-light"
-                ),
-                html.Button(
-                    "Go", id="search-button", n_clicks=0,
-                    className="ms-2 btn btn-secondary"
-                )
-            ], style={"marginBottom": "1rem"}),
+            #input_view_geocode(),
+            input_view_gmailchips(),
             # Main Map
             dl.Map(
                 id="map",

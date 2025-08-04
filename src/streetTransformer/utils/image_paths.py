@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import List, Dict
 import os
-from .constants import REF_FILE_RELATIVE_PATH, REF_FILE_PATTERN, AVAILABLE_ZLEVELS, AVAILABLE_YEARS
+from ..config.constants import REF_FILE_RELATIVE_PATH, REF_FILE_PATTERN, AVAILABLE_ZLEVELS, AVAILABLE_YEARS
 
 import pandas as pd
 def get_imagery_reference_path(root_path:Path, zlevel:int, year:int) -> Path:

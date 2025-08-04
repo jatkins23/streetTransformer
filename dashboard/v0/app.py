@@ -26,7 +26,7 @@ sys.path.append(str(project_root))
 
 # Import Local Modules
 from src.streetTransformer.utils.image_paths import get_imagery_reference_path, assemble_location_imagery
-from src.streetTransformer.utils.constants import DATA_PATH, REF_FILE_RELATIVE_PATH, AVAILABLE_YEARS
+from src.streetTransformer.config.constants import DATA_PATH, REF_FILE_RELATIVE_PATH, AVAILABLE_YEARS
 from scripts.test_compare_models import run_all_models
 from src.streetTransformer.viz.compare_images import create_comparison_figure
 from src.streetTransformer.viz.utils import load_images
