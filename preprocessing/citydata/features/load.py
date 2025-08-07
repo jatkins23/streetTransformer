@@ -3,11 +3,11 @@ from pathlib import Path
 import pandas as pd
 import geopandas as gpd
 from shapely import from_wkt
+from pyproj import Proj
 
-
-def load_standard(path:Path) -> gpd.GeoDataFrame: # TODO: refactor to another file for each 
+def load_standard(path:Path, crs:Proj|str|int='EPSG:4326') -> gpd.GeoDataFrame: # TODO: refactor to another file for each?
     temp = pd.read_csv(path)
-    ret_gdf = gpd.GeoDataFrame(temp, geometry=from_wkt(temp['the_geom']))
+    ret_gdf = gpd.GeoDataFrame(temp, geometry=from_wkt(temp['the_geom']), crs=crs)
     
     return ret_gdf
 

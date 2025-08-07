@@ -297,4 +297,4 @@ def gather_location_imagery(location_name, tile_static_path, tile_ref_path,
     return nodes, images_df
 
 if __name__ == '__main__':
-    gather_location_imagery('Downtown Brooklyn, New York, USA', static_path)
+    gather_location_imagery('Downtown Brooklyn, New York, USA', static_path, tile_ref)

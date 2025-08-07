@@ -44,4 +44,3 @@ def clean_traffic_calming(input_gdf:gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     
     return return_gdf
 
-
