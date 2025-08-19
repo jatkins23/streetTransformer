@@ -16,7 +16,6 @@ from .features.load import load_standard
 from .geoprocessing import buffer_locations # This is awkward
 from preprocessing.data_load.load_lion import load_lion_default
 
-
 load_dotenv()
 
 DATA_PATH = project_dir / Path(str(os.getenv('OPENNYC_PATH')))
@@ -33,7 +32,7 @@ COLUMNS_TO_KEEP = ['ProjectID','ProjTitle', 'FMSID', 'FMSAgencyID',
        'ProjectJustification', 'OnStreetName', 'FromStreetName',
        'ToStreetName', 'OFTCode', 'DesignFY','geometry']
 
-def load_projects(universe:str='nyc', data_path=DATA_PATH, source_file_name=CORE_FILE_NAME) -> gpd.GeoDataFrame:
+def load_caprecon_file(universe:str='nyc', data_path=DATA_PATH, source_file_name=CORE_FILE_NAME) -> gpd.GeoDataFrame:
     source_file_path = data_path / source_file_name
 
     projects_gdf = load_standard(source_file_path) # TODO: confirm
@@ -54,7 +53,7 @@ def gather_capital_projects_for_locations(locations_gdf:gpd.GeoDataFrame, outfil
     # Project features 
     # cleaned_gdfs = {k: v.set_crs('4326') for k, v in cleaned_gdfs.items()}
     # cleaned_gdfs_p = {k: v.to_crs('2263') for k, v in cleaned_gdfs.items()}
-    projects_gdf = load_projects(data_path=DATA_PATH, source_file_name=CORE_FILE_NAME) # maybe set crs('4326')
+    projects_gdf = load_caprecon_file(data_path=DATA_PATH, source_file_name=CORE_FILE_NAME) # maybe set crs('4326')
     projects_gdf_p = projects_gdf.to_crs('2263') # TODO: store crs in config somewhere
     
     # Create buffers with width `buffer_width`
@@ -79,7 +78,6 @@ def gather_capital_projects_for_locations(locations_gdf:gpd.GeoDataFrame, outfil
     # So this is load, need to then do the summarize. sHERE HERE
 
     return location_projects_gdf
-
 
 if __name__ == '__main__':
     # This is kinda gonna just copy the `features_pipeline`. TOOD: Refactor into a factory?
