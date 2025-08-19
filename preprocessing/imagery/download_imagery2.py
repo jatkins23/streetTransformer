@@ -6,6 +6,7 @@
 # [X] Remove iterrows (!important)n
 
 import io
+import os
 import math
 import logging
 from pathlib import Path
@@ -59,22 +60,47 @@ def get_center_tile(point: Point, zoom: int) -> Tuple[int, int]: # TODO: necessa
     tile = mercantile.tile(point.x, point.y, zoom)
     return tile.x, tile.y
 
+def _cache_tile_name(zoom: int, x: int, y: int) -> Path: # TODO: add year? Maybe not necessary
+    return f"{x}_{y}_{zoom}.png"
+
+def find_tile_in_cache(cache_path: Path, cache_tile_name: Path) -> Optional[Image.Image]:
+    # Handle cache
+    cache_tile_path = cache_path / cache_tile_name
+    try:
+        cached_tile_img = Image.open(cache_tile_path).convert("RGB")
+        #logger.info(f'{cache_tile_name} found in cache!')
+        return cached_tile_img
+    except:
+        #logger.info(f'{cache_tile_name} NOT found in cache!')
+        return None
 
 def download_tile(
     session: requests.Session,
     base_url: str,
     zoom: int,
     x: int,
-    y: int
+    y: int,
+    check_cache: bool=True,
+    cache_path: Path=Path('.tile_cache/')
 ) -> Optional[Image.Image]:
     """
     Fetch a single tile as a PIL Image, or return None on failure.
     """
+    cache_tile_name = _cache_tile_name(zoom, x, y)
+    cached_tile_img = find_tile_in_cache(cache_path, cache_tile_name)
+    if check_cache:
+        if cached_tile_img is not None:
+            return cached_tile_img
+    
     url = f"{base_url}/tile/{zoom}/{y}/{x}"
     try:
         response = session.get(url, timeout=5)
         response.raise_for_status()
-        return Image.open(io.BytesIO(response.content)).convert("RGB")
+        downloaded_tile_img = Image.open(io.BytesIO(response.content)).convert("RGB")
+
+        downloaded_tile_img.save(cache_path / cache_tile_name) # Save to cache
+        
+        return downloaded_tile_img
     except Exception as e:
         logger.warning(f"Tile ({x},{y}) failed: {e}")
         return None
@@ -102,7 +128,9 @@ def download_tiles(
     center_x: int,
     center_y: int,
     zoom: int,
-    radius: int
+    radius: int,
+    check_cache: bool=True,
+    cache_path: Path=Path('.tile_cache/')
 ) -> Dict[Tuple[int, int], Optional[Image.Image]]:
     """
     Download a square block of tiles around (center_x, center_y).
@@ -115,7 +143,7 @@ def download_tiles(
 
     from concurrent.futures import ThreadPoolExecutor, as_completed
     with ThreadPoolExecutor(max_workers=len(offsets)) as executor:
-        futures = {executor.submit(download_tile, session, base_url, zoom, x0+dx, y0+dy): (dx, dy)
+        futures = {executor.submit(download_tile, session, base_url, zoom, x0+dx, y0+dy, check_cache, cache_path): (dx, dy)
                    for dx, dy in offsets}
         for fut in as_completed(futures):
             dx, dy = futures[fut]
@@ -194,13 +222,15 @@ def process_point(
     point: Point,
     zoom: int,
     radius: int,
-    fill_color: Tuple[int, int, int] = (0, 0, 0)
+    fill_color: Tuple[int, int, int] = (0, 0, 0),
+    check_cache: bool=True,
+    cache_path: Path=Path('.tile_cache/')
 ) -> Optional[Image.Image]:
     """
     Download, stitch, and crop a mosaic image centered on `point`.
     """
     x0, y0 = get_center_tile(point, zoom)
-    tile_map = download_tiles(session, base_url, x0, y0, zoom, radius)
+    tile_map = download_tiles(session, base_url, x0, y0, zoom, radius, check_cache, cache_path)
 
     if not all([x is None for x in tile_map.values()]):
         sample = next(img for img in tile_map.values() if img)
@@ -225,32 +255,41 @@ def download_and_stitch_gdf(
     zoom: int,
     save_dir: Path,
     service_url_template: str=TILE_URL_TEMPLATE,
-    id_col: Optional[str] = None,
+    id_col: Optional[str] = 'NODEID', # TODO: should be location_id
     geom_col: str = "geometry",
     radius: int = 1,
     fill_color: Tuple[int, int, int] = (0, 0, 0),
-    quiet=False
+    check_cache: bool = True,
+    cache_path: Optional[Path] = None,
+    track_progress=True,
+    quiet = False
 ) -> None:
     """
     Process each point in `gdf` and save a pixel-accurate mosaic.
     """
+    # Handle the cache
+    if cache_path is None:
+        cache_path = save_dir / '.tile_cache'
+        cache_path.mkdir(parents=True, exist_ok=True)
 
     save_dir.mkdir(parents=True, exist_ok=True)
-    gdf = reproject_to_wgs84(gdf)
+    gdf = reproject_to_wgs84(gdf) # Ensure its in WGS84
+
+    # Create the session and necessary session data
     session = requests.Session()
     base_url = _format_base_url(str(service_url_template), year)
 
+    # Just count the rows for progress keeping
     total_rows = gdf.shape[0]
 
-    for row in tqdm(gdf.itertuples(index=True, name="Row"), total=total_rows, desc="Proecessing points"):
-        #ident = getattr(row, id_col) if (id_col and id_col in gdf.columns) else row.Index
-        ident = row.Index # TODO: this should be NODEID, then eventually renamed and standardized to location_id
-        pt = row.geometry # geom_col
+    for row in tqdm(gdf.itertuples(index=True, name="Row"), total=total_rows, desc=f"Proecessing locations ({year})", disable=(not track_progress)):
+        ident = getattr(row, id_col) if (id_col and id_col in gdf.columns) else row.Index
+        pt = getattr(row, geom_col)
         if not isinstance(pt, Point):
             logger.error(f"[{ident}] geometry not Point – skipping")
             continue
 
-        mosaic = process_point(session, base_url, pt, zoom, radius, fill_color)
+        mosaic = process_point(session, base_url, pt, zoom, radius, fill_color, check_cache, cache_path)
         out_path = save_dir / f"{ident}.png"
         if out_path and mosaic:
             mosaic.save(out_path)

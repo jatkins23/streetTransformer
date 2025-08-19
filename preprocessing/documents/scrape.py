@@ -1,3 +1,5 @@
+# This module scrapes project documents from the city's website. It should be run only once, before preprocessing
+
 import os
 import requests
 
