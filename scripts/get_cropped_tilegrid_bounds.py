@@ -1,4 +1,5 @@
 import geopandas as gpd
+import os
 
 SAMPLE_IMAGES_PATH = Path('data/sample_images/')
 LOCATIONS_PATH = Path('src/streetTransformer/data/universes/caprecon3/locations.feather')
@@ -6,7 +7,7 @@ LOCATIONS_PATH = Path('src/streetTransformer/data/universes/caprecon3/locations.
 YEARS = [2014, 2018, 2022, 2024]
 
 #os.listdir(SAMPLE_)
-locations_gdf = gpd.read_feather(LOCATIONS_PATH).rename(columns={'NODEID': 'location_id'}).set_index('location_id')
+locations_gdf = gpd.read_feather(LOCATIONS_PATH).set_index('location_id')
 original_crs = locations_gdf.crs
 locations_gdf = locations_gdf.to_crs('4326')
 
@@ -46,7 +47,6 @@ def get_bounds(grid_bboxes):
 
 
 sample_locations_gdf['tile_grid_bounds'] = [get_bounds(bb) for bb in grid_bboxes]
-
 
 #sample_locations_gdf.to_csv('data/sample_images/locations.csv')
 

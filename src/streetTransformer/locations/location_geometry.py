@@ -5,21 +5,6 @@ import mercantile
 from shapely.geometry import Point
 from pyproj import Transformer, Proj
 
-# class LocationImagery:
-#     def __init__(self, coords:Tuple[float, float], tile_width:int=3, zlevel:int=20):
-#         self.coords = coords
-#         centroid_tile:Tile = tile(self.coords[0], self.coords[1], self.zoom_level)
-#         tile_grid:List[Tile] = 
-#         # coords: Tuple[float, float]
-#         # tile_width: int                        = 3
-#         # zoom_level: int                        = 20
-#         # centroid_tile: Optional[int]           = None
-#         # tile_grid: Optional[List[int]]         = None
-#         # image_paths: Optional[Dict[str, Path]] = None
-
-#     def model_post_init(self, __context):
-#         self.centroid_tile = int(mercantile.tile(self.coords[0], self.coords[1], self.zoom_level))
-
 def _centered_range(n:int) -> List[int]:
     if n % 2 == 0:
         raise ValueError(f"n must be odd, got {n}")

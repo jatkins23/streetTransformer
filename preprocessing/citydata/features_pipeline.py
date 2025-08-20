@@ -1,7 +1,7 @@
 # TODO: I want to make these wrapper functions simpler
 import os, sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 from datetime import datetime
 import argparse
 
@@ -11,23 +11,28 @@ import geopandas as gpd
 import numpy as np
 #from geopandas import CRS
 from shapely import from_wkt
+from shapely.geometry import Point
 
-project_dir = Path(__file__).resolve().parent.parent.parent
-print(f"Treating '{project_dir}' as `project_dir`")
-sys.path.append(str(project_dir))
 
 from .features.load import load_standard
 from .features.clean import clean_bike_rtes, clean_bus_lanes, clean_ped_plaza, clean_traffic_calming # Note: used in 
 from .features.summarize import count_features_by_location
 #from preprocessing.data_load.load_intersections import load_location
 from .geoprocessing import buffer_locations
+
+project_dir = Path(__file__).resolve().parent.parent.parent
+print(f"Treating '{project_dir}' as `project_dir`")
+sys.path.append(str(project_dir))
+
 from preprocessing.data_load.load_lion import load_lion_default
+from src.streetTransformer.locations.location_geometry import LocationGeometry
 from src.streetTransformer.locations.location import Location
 import tqdm
 
 from dotenv import load_dotenv
 load_dotenv()
 
+YEARS = list(range(2006, 2025, 2))
 ROOT_PATH = project_dir / Path(str(os.getenv('OPENNYC_PATH')))
 FEATURE_METADATA = {
     'bike_rtes': {'file_path': 'New_York_City_Bike_Routes_20250722.csv', 
@@ -136,19 +141,21 @@ def count_features_for_locations(locations_gdf:gpd.GeoDataFrame, buffer_width:in
         _type_: _description_
     """
     # Load and clean features
-    loaded_gdfs = load_all_feature_files(FEATURE_METADATA, ROOT_PATH, silent=silent)
-    cleaned_gdfs = clean_all_feature_files(loaded_gdfs, FEATURE_METADATA, silent=silent)
+    loaded_feature_gdfs = load_all_feature_files(FEATURE_METADATA, ROOT_PATH, silent=silent)
+    cleaned_feature_gdfs = clean_all_feature_files(loaded_feature_gdfs, FEATURE_METADATA, silent=silent)
     
     # Project features 
-    cleaned_gdfs = {k: v.set_crs('4326') for k, v in cleaned_gdfs.items()}
-    cleaned_gdfs_p = {k: v.to_crs('2263') for k, v in cleaned_gdfs.items()}
+    cleaned_feature_gdfs = {k: v.set_crs('4326') for k, v in cleaned_feature_gdfs.items()}
+    cleaned_feature_gdfs_p = {k: v.to_crs('2263') for k, v in cleaned_feature_gdfs.items()}
+
+    return cleaned_feature_gdfs_p
     
     # Create buffers with width `buffer_width`
     location_buffers = buffer_locations(locations_gdf, buffer_width=buffer_width)
 
     # summarize
     summarized_gdf = summarize_all_features(
-        location_buffers, cleaned_gdfs_p, 
+        location_buffers, cleaned_feature_gdfs_p, 
         features_to_summarize=['bike_rtes','bus_lanes','ped_plaza','traffic_calming']
     )
 
@@ -158,9 +165,93 @@ def count_features_for_locations(locations_gdf:gpd.GeoDataFrame, buffer_width:in
 
     return summarized_gdf
 
-def count_features_by_buffer_time(locations_gdf:gpd.GeoDataFrame, buffer_width:int=100, date:datetime|str='now', silent:bool=False, outfile:Optional[Path|str]=None):
-    # Update the previous function with some time element. Can actually probably replace it.
-    pass
+# Load and Clean
+def load_and_clean_feature_data(feature_metadata:Dict=FEATURE_METADATA, root_path:Path=ROOT_PATH, silent:bool=False, proj_crs:str='2263'):
+    # Load and clean features
+    loaded_feature_gdfs = load_all_feature_files(feature_metadata, root_path, silent=silent)
+    cleaned_feature_gdfs = clean_all_feature_files(loaded_feature_gdfs, FEATURE_METADATA, silent=silent)
+    
+    # Project features 
+    cleaned_feature_gdfs = {k: v.set_crs('4326') for k, v in cleaned_feature_gdfs.items()}
+    cleaned_feature_gdfs_p = {k: v.to_crs(proj_crs) for k, v in cleaned_feature_gdfs.items()}
+
+    return cleaned_feature_gdfs_p
+
+def timeshift_feature(feat_data:gpd.GeoDataFrame, featuretype:str, date: datetime) -> Optional[gpd.GeoDataFrame]:
+    if featuretype == 'bike_rtes':
+        date_mask = ((feat_data['installdate'] < date) & (feat_data['removedate'] > date))
+        return feat_data[date_mask]
+    
+    if featuretype == 'traffic_calming':
+        date_mask = (feat_data['install_date'] < date)
+        return feat_data[date_mask]
+    
+    if featuretype == 'bus_lanes':
+        date_mask = (feat_data['lastupdate'] < date) # TODO: fix
+        return feat_data
+    
+    if featuretype == 'ped_plaza':
+        raise Warning('ped_plaza not implemented')
+    
+    return None
+
+
+def timeshift_feature_data(cleaned_feature_dict:Dict[str, gpd.GeoDataFrame], date:Union[str, datetime, pd.Timestamp], features:Optional[List[str]]=['bike_rtes']):
+    # handle datetime
+    date = pd.to_datetime(date)
+
+    timeshifted_feature_data = {}
+    
+    if features is None:
+        features = list(FEATURE_METADATA.keys())
+    
+    for feat in features:
+        if feat in FEATURE_METADATA.keys() and feat in cleaned_feature_dict.keys():
+            timeshifted_feature_data[feat] = timeshift_feature(cleaned_feature_dict[feat], featuretype=feat, date=date)
+
+    return timeshifted_feature_data
+
+def compare_locations_to_features(locations_gdf:gpd.GeoDataFrame, features_snapshot:gpd.GeoDataFrame):
+    # def _set_bounds(point_in_gcs:Point):
+    #     temp =  LocationGeometry(
+    #         centroid=(point_in_gcs.x, point_in_gcs.y),
+    #         proj_crs=str(locations_gdf.crs)
+    #     )
+    #     return temp.bounds_proj
+    
+    #locations_gdf['tilegrid_bounds'] = locations_gdf.to_crs('4326').geometry.map(_set_bounds)
+    locations_gdf['tilegrid_bounds'] = locations_gdf.buffer(200)# TODO: Replace with real
+    joined =  locations_gdf.set_geometry('tilegrid_bounds').sjoin(
+        features_snapshot,
+        lsuffix='_location', rsuffix='_feature'
+    )
+
+    return joined
+
+
+def count_features_by_location_time(
+        locations_gdf:gpd.GeoDataFrame, 
+        features_dict:Dict[str, gpd.GeoDataFrame],
+        date:datetime|str|pd.Timestamp='now', 
+        features:List[str]=['traffic_calming'],
+        silent:bool=False
+    ):
+    
+    # Loop through locations
+    for row in locations_gdf.itertuples():
+        # Create a Location
+        temp_location = Location(
+            location_id=row.location_id,
+            universe_name=args.universe,
+            crossstreets=row.crossstreets,
+            centroid=row.geometry
+        )
+
+        # Get area
+        study_area = temp_location.geometry.bounds_proj
+
+        # 
+    # create 
 
 # TODO: Move to a better place
 def load_locations(universe_name:str, universes_path:Path=UNIVERSES_PATH, source:str='lion', force_new_locations:bool=False):
@@ -169,7 +260,7 @@ def load_locations(universe_name:str, universes_path:Path=UNIVERSES_PATH, source
         print(f'universe "{universe_name}" loaded from memory')
     except:
         if source == 'lion':
-            locations_gdf = load_lion_default(args.universe) # TODO: it should take in a configs
+            locations_gdf = load_lion_default(universe_name) # TODO: it should take in a config
         else:
             print(f'Unknown universe `source`: "{source}"')
 
@@ -189,20 +280,28 @@ if __name__ == '__main__':
     # Load the locations.gdf
     locations_gdf = load_locations(args.universe, universes_path=UNIVERSES_PATH, source='lion', force_new_locations=args.force_new_locations)
 
+    locations_gdf_p = locations_gdf.to_crs('4326').head(10)
     # Turn them into "Locations" TODO: in future, store them as Locations
-    total_locations = locations_gdf.shape[0]
-    for row in tqdm.tqdm(locations_gdf.head(10).itertuples(), total=total_locations):
-        temp_location = Location(
-            location_id=row.location_id,
-            universe_name=args.universe_name,
-            crossstreets=row.crossstreets,
-            centroid=row.geometry,
-            years=YEARS
-        )
-    
+    total_locations = locations_gdf_p.shape[0]
+    # for row in tqdm. tqdm(locations_gdf_p.itertuples(), total=total_locations):
+    #     temp_location = Location(
+    #         location_id=row.location_id,
+    #         universe_name=args.universe,
+    #         crossstreets=row.crossstreets,
+    #         centroid=row.geometry,
+    #         years=YEARS
+    #     )
 
-    
-    output = count_features_for_locations(locations_gdf, buffer_width=100, outfile=args.outfile, silent= args.silent) # TODO: input buffer-width?
-    print(output)
+    features_dict = load_and_clean_feature_data(FEATURE_METADATA, ROOT_PATH)
+    dicts = {}
+    for year in YEARS:
+        FEATURES = ['traffic_calming']
+        ts_feat_data = timeshift_feature_data(features_dict, f'{year}-01-01', features=FEATURES)
+        for feat in FEATURES:
+            joined = compare_locations_to_features(locations_gdf, ts_feat_data[feat])
+            out_path = UNIVERSES_PATH / 'caprecon_plus_control' / 'features' / str(year) / f'{feat}.feather'
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            joined.to_feather(out_path)
+
     
 

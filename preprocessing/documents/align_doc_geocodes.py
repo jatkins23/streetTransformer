@@ -17,7 +17,7 @@ PROJECT_PATH = Path(os.getcwd()).resolve()
 print(f'Treating "{PROJECT_PATH}" as `project_path`')
 sys.path.append(str(PROJECT_PATH))
 
-UNIVERSE_NAME = 'caprecon3'
+UNIVERSE_NAME = 'caprecon_plus_control'
 UNIVERSE_PATH = PROJECT_PATH / 'src/streetTransformer/data/universes/' / UNIVERSE_NAME
 DOCS_GEOCODED_FILE =  PROJECT_PATH / 'data/project_documents/geocoded_gemini_to_census2.csv'
 DOCUMENTS_PATH = (PROJECT_PATH / '../proj_data/project_documents/').resolve()
@@ -159,7 +159,7 @@ def get_document_paths(documents_df:pd.DataFrame, documents_path:Path=DOCUMENTS_
             abs_path = base_path / folder / file_name
             abs_paths.append(abs_path)
             rel_path = os.path.relpath(abs_path, project_path)
-            rel_paths.append(rel_path)
+            rel_paths.append(str(rel_path))
 
         return abs_paths, rel_paths
     
@@ -232,20 +232,20 @@ def pipeline(
     cleaned_gdf = documents_gdf.drop(['document_links','source_url'], axis=1)
     # Write to 
     if out_path:
-        cleaned_gdf.to_file(out_path)
+        cleaned_gdf.drop(['absolute_paths'], axis=1).to_feather(out_path)
 
     return cleaned_gdf
 
 if __name__ == '__main__':
-    UNIVERSE_NAME = 'caprecon3'
+    UNIVERSE_NAME = 'caprecon_plus_control'
     universe_path = PROJECT_PATH / 'src/streetTransformer/data/universes/' / UNIVERSE_NAME
 
     cleaned_gdf = pipeline(
         docs_geocoded_path  = DOCS_GEOCODED_FILE, 
         documents_path      = DOCUMENTS_PATH,
-        out_path            = universe_path / 'documents.geojson'
+        out_path            = universe_path / 'documents.feather'
     )
 
     # #print(cleaned_gdf.loc[1]['geometry'])
-    print(cleaned_gdf[['relative_paths', 'absolute_paths']])
+    print(cleaned_gdf[['relative_paths', 'absolute_paths']].dtypes)
 
