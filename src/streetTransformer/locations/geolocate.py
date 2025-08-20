@@ -9,7 +9,6 @@ import re
 from ..utils.streets import match_streetname
 from ..utils.geodata import normalize_coord
 
-# TODO: make type: location with id = int??
 
 # TODO: add the locations to constants or some sort of config. there should be a config file for each universe?
 PATH = Path()
@@ -45,13 +44,13 @@ def geolocate_crossstreets_to_location(cross_streets:List, nodes_gdf:gpd.GeoData
     subset = node_names_gdf.copy()
     for s in cross_streets:
         #print(s)
-        subset_nodeids = match_streetname(s, subset['StreetName'], subset[StreetNameid_column])
+        subset_nodeids = match_streetname(s, subset['crossstreets'], subset[StreetNameid_column])
         subset = subset[subset[StreetNameid_column].isin(subset_nodeids)]
         
     # Group by
     subset_named = (
         subset
-            .groupby(StreetNameid_column)['StreetName']
+            .groupby(StreetNameid_column)['crossstreets']
             .apply(lambda x: 
                    ' & '.join(x.str.strip().str.title()) # TODO: Replace with build_oneline_address?
             )
@@ -60,8 +59,8 @@ def geolocate_crossstreets_to_location(cross_streets:List, nodes_gdf:gpd.GeoData
     # Now merge back to the main node dataset
     subset_nodes_full = nodes_gdf.merge(
         subset_named,
-        left_on='NODEID', right_on='NodeId'
-    ).set_geometry('geometry').rename(columns={'StreetName': 'InteresectionName'})
+        left_on='location_id', right_on='NodeId'
+    ).set_geometry('geometry').rename(columns={'crossstreets': 'InteresectionName'}) # TODO: Why?
     
     return subset_nodes_full
 

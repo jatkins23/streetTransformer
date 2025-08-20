@@ -22,12 +22,6 @@ UNIVERSE_PATH = PROJECT_PATH / 'src/streetTransformer/data/universes/' / UNIVERS
 DOCS_GEOCODED_FILE =  PROJECT_PATH / 'data/project_documents/geocoded_gemini_to_census2.csv'
 DOCUMENTS_PATH = (PROJECT_PATH / '../proj_data/project_documents/').resolve()
 
-# def pipeline(universe_path:Path) -> :
-#     # Load locations
-#     locations_gdf = gpd.read_feather(UNIVERSE_PATH / 'locations.feather').rename(columns={'NODEID':'location_id'})
-
-#     #Images
-
 def read_docs_geocoded_json(
     filepath: str|Path,
     *,

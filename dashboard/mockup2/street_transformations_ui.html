@@ -1,0 +1,440 @@
+<!-- File: index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Street Transformations</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- Header (drop static links or text into the slots below) -->
+    <st-header>
+      <span slot="title">Street Transformations</span>
+      <a slot="right" href="#">NYC DOT Guidelines</a>
+    </st-header>
+
+    <main class="layout">
+      <!-- LEFT: Map/Picker Column -->
+      <section class="left-col">
+        <st-location-picker placeholder="Search a place…"></st-location-picker>
+
+        <st-street-list>
+          <!-- Add static items as <li> children below -->
+          <li>E 14 St</li>
+          <li>W 14 St</li>
+          <li>Hope St / Springfield St</li>
+          <li>E 64 St</li>
+        </st-street-list>
+
+        <st-map-panel>
+          <!-- Put any static overlay markup inside; it renders over the map canvas -->
+          <div class="map-overlay">Proposed labels or overlays</div>
+        </st-map-panel>
+
+        <st-post-types>
+          <!-- Add/rename buttons by editing the static <button> tags below -->
+          <button>Ped Plazas</button>
+          <button>Bike Rtes</button>
+          <button>Bus Lanes</button>
+          <button>FedEx Ln</button>
+        </st-post-types>
+      </section>
+
+      <!-- RIGHT: Detail View Column -->
+      <aside class="right-col">
+        <st-panel title="Detail View">
+          <div class="grid-2">
+            <div class="tile">Satellite Imagery 2012</div>
+            <div class="tile">Satellite Imagery 2018</div>
+            <div class="tile">Street Segmentation 2012</div>
+            <div class="tile">Street Segmentation 2018</div>
+          </div>
+        </st-panel>
+
+        <st-panel title="Change Summary">
+          <ul class="doc-list">
+            <li><a href="#">Docs 1</a></li>
+            <li><a href="#">Docs 2</a></li>
+          </ul>
+        </st-panel>
+      </aside>
+    </main>
+  </div>
+
+  <script src="js/components.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
+
+<!-- File: assets/styles.css -->
+:root{--bg:#0b0c0f;--card:#14161a;--line:#2a2d34;--text:#e9eef5;--muted:#aab3bf}
+*{box-sizing:border-box} html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
+
+/* layout */
+.app{display:flex;flex-direction:column;height:100%}
+.layout{display:grid;grid-template-columns:minmax(640px,1.6fr) minmax(360px,0.9fr);gap:16px;padding:16px;height:calc(100% - 64px)}
+.left-col,.right-col{min-height:0}
+
+/* header */
+st-header{display:block;border-bottom:1px solid var(--line);background:var(--card)}
+.st-header__inner{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 16px}
+.st-header__title{font-size:20px;font-weight:700}
+.st-header__right a{color:var(--muted);text-decoration:none}
+
+/* panels */
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.panel__header{padding:10px 12px;border-bottom:1px solid var(--line);font-weight:600}
+.panel__body{padding:12px}
+
+/* location picker */
+st-location-picker{display:block}
+.lp{display:flex;gap:8px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:12px}
+.lp input{flex:1;min-width:160px;background:#0f1115;border:1px solid var(--line);border-radius:10px;color:var(--text);padding:10px}
+.lp button{background:#1f6feb;color:#fff;border:0;border-radius:10px;padding:10px 14px;cursor:pointer}
+
+/* street list */
+st-street-list{display:block}
+.streets{list-style:none;margin:0 0 12px 0;padding:8px;background:var(--card);border:1px solid var(--line);border-radius:14px;max-height:160px;overflow:auto}
+.streets li{padding:8px 10px;border-radius:8px}
+.streets li:hover{background:#101218}
+
+/* map */
+st-map-panel{display:block}
+.map-shell{position:relative;display:block;background:#0e1116;border:1px dashed var(--line);border-radius:14px;height:360px;margin-bottom:12px}
+.map-canvas{position:absolute;inset:0}
+.map-overlay{position:absolute;inset:auto 16px 16px 16px;color:var(--muted)}
+
+/* post types */
+st-post-types{display:block}
+.post-types{display:flex;flex-wrap:wrap;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px}
+.post-types button{padding:8px 10px;border-radius:10px;background:#11131a;border:1px solid var(--line);color:var(--text);cursor:pointer}
+.post-types button:hover{border-color:#3a3f48}
+
+/* right column */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{height:120px;border:1px dashed var(--line);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.doc-list{list-style:none;margin:0;padding:0}
+.doc-list li{margin:8px 0}
+.doc-list a{color:var(--text)}
+
+/* utilities */
+.visually-hidden{position:absolute!important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap}
+
+/* responsive */
+@media (max-width: 1100px){
+  .layout{grid-template-columns:1fr}
+}
+
+/* File: js/components.js */
+(() => {
+  // Helper to attach a shadow with shared styles
+  const inject = (el, html) => {
+    const root = el.attachShadow({ mode: 'open' });
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'assets/styles.css';
+    root.appendChild(link);
+    const wrap = document.createElement('div');
+    wrap.innerHTML = html.trim();
+    root.appendChild(wrap);
+    return root;
+  };
+
+  // <st-header>
+  customElements.define('st-header', class extends HTMLElement {
+    connectedCallback(){
+      const r = inject(this, `
+        <header class="st-header__inner">
+          <div class="st-header__title"><slot name="title">Street Transformations</slot></div>
+          <div class="st-header__right"><slot name="right"></slot></div>
+        </header>
+      `);
+    }
+  });
+
+  // <st-panel>
+  customElements.define('st-panel', class extends HTMLElement {
+    connectedCallback(){
+      const title = this.getAttribute('title') || '';
+      inject(this, `
+        <section class="panel">
+          ${title ? `<div class="panel__header">${title}</div>` : ''}
+          <div class="panel__body"><slot></slot></div>
+        </section>
+      `);
+    }
+  });
+
+  // <st-location-picker>
+  customElements.define('st-location-picker', class extends HTMLElement {
+    connectedCallback(){
+      const placeholder = this.getAttribute('placeholder') || 'Search…';
+      const root = inject(this, `
+        <div class="lp">
+          <label class="visually-hidden" for="q">Location Picker</label>
+          <input id="q" type="search" placeholder="${placeholder}" />
+          <button type="button">Go</button>
+        </div>
+      `);
+      // No behavior wired yet — purely scaffold for static content
+    }
+  });
+
+  // <st-street-list>
+  customElements.define('st-street-list', class extends HTMLElement {
+    connectedCallback(){
+      const r = inject(this, `<ul class="streets"><slot></slot></ul>`);
+    }
+  });
+
+  // <st-map-panel>
+  customElements.define('st-map-panel', class extends HTMLElement {
+    connectedCallback(){
+      inject(this, `
+        <div class="map-shell">
+          <div class="map-canvas" aria-label="Map placeholder"></div>
+          <slot></slot>
+        </div>
+      `);
+    }
+  });
+
+  // <st-post-types>
+  customElements.define('st-post-types', class extends HTMLElement {
+    connectedCallback(){
+      inject(this, `<div class="post-types"><slot></slot></div>`);
+    }
+  });
+})();
+
+/* File: js/main.js */
+(() => {
+  // This file is intentionally minimal: it shows where you'd add behavior later.
+  // You can select any custom element and inject static content, e.g.:
+  // document.querySelector('st-panel[title="Detail View"]').shadowRoot
+  //   .querySelector('.panel__body')
+  //   .insertAdjacentHTML('beforeend', '<p>Static paragraph…</p>');
+})();
+<!-- File: index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Street Transformations</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- Header (drop static links or text into the slots below) -->
+    <st-header>
+      <span slot="title">Street Transformations</span>
+      <a slot="right" href="#">NYC DOT Guidelines</a>
+    </st-header>
+
+    <main class="layout">
+      <!-- LEFT: Map/Picker Column -->
+      <section class="left-col">
+        <st-location-picker placeholder="Search a place…"></st-location-picker>
+
+        <st-street-list>
+          <!-- Add static items as <li> children below -->
+          <li>E 14 St</li>
+          <li>W 14 St</li>
+          <li>Hope St / Springfield St</li>
+          <li>E 64 St</li>
+        </st-street-list>
+
+        <st-map-panel>
+          <!-- Put any static overlay markup inside; it renders over the map canvas -->
+          <div class="map-overlay">Proposed labels or overlays</div>
+        </st-map-panel>
+
+        <st-post-types>
+          <!-- Add/rename buttons by editing the static <button> tags below -->
+          <button>Ped Plazas</button>
+          <button>Bike Rtes</button>
+          <button>Bus Lanes</button>
+          <button>FedEx Ln</button>
+        </st-post-types>
+      </section>
+
+      <!-- RIGHT: Detail View Column -->
+      <aside class="right-col">
+        <st-panel title="Detail View">
+          <div class="grid-2">
+            <div class="tile">Satellite Imagery 2012</div>
+            <div class="tile">Satellite Imagery 2018</div>
+            <div class="tile">Street Segmentation 2012</div>
+            <div class="tile">Street Segmentation 2018</div>
+          </div>
+        </st-panel>
+
+        <st-panel title="Change Summary">
+          <ul class="doc-list">
+            <li><a href="#">Docs 1</a></li>
+            <li><a href="#">Docs 2</a></li>
+          </ul>
+        </st-panel>
+      </aside>
+    </main>
+  </div>
+
+  <script src="js/components.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
+
+<!-- File: assets/styles.css -->
+:root{--bg:#0b0c0f;--card:#14161a;--line:#2a2d34;--text:#e9eef5;--muted:#aab3bf}
+*{box-sizing:border-box} html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
+
+/* layout */
+.app{display:flex;flex-direction:column;height:100%}
+.layout{display:grid;grid-template-columns:minmax(640px,1.6fr) minmax(360px,0.9fr);gap:16px;padding:16px;height:calc(100% - 64px)}
+.left-col,.right-col{min-height:0}
+
+/* header */
+st-header{display:block;border-bottom:1px solid var(--line);background:var(--card)}
+.st-header__inner{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 16px}
+.st-header__title{font-size:20px;font-weight:700}
+.st-header__right a{color:var(--muted);text-decoration:none}
+
+/* panels */
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.panel__header{padding:10px 12px;border-bottom:1px solid var(--line);font-weight:600}
+.panel__body{padding:12px}
+
+/* location picker */
+st-location-picker{display:block}
+.lp{display:flex;gap:8px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:12px}
+.lp input{flex:1;min-width:160px;background:#0f1115;border:1px solid var(--line);border-radius:10px;color:var(--text);padding:10px}
+.lp button{background:#1f6feb;color:#fff;border:0;border-radius:10px;padding:10px 14px;cursor:pointer}
+
+/* street list */
+st-street-list{display:block}
+.streets{list-style:none;margin:0 0 12px 0;padding:8px;background:var(--card);border:1px solid var(--line);border-radius:14px;max-height:160px;overflow:auto}
+.streets li{padding:8px 10px;border-radius:8px}
+.streets li:hover{background:#101218}
+
+/* map */
+st-map-panel{display:block}
+.map-shell{position:relative;display:block;background:#0e1116;border:1px dashed var(--line);border-radius:14px;height:360px;margin-bottom:12px}
+.map-canvas{position:absolute;inset:0}
+.map-overlay{position:absolute;inset:auto 16px 16px 16px;color:var(--muted)}
+
+/* post types */
+st-post-types{display:block}
+.post-types{display:flex;flex-wrap:wrap;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px}
+.post-types button{padding:8px 10px;border-radius:10px;background:#11131a;border:1px solid var(--line);color:var(--text);cursor:pointer}
+.post-types button:hover{border-color:#3a3f48}
+
+/* right column */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{height:120px;border:1px dashed var(--line);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.doc-list{list-style:none;margin:0;padding:0}
+.doc-list li{margin:8px 0}
+.doc-list a{color:var(--text)}
+
+/* utilities */
+.visually-hidden{position:absolute!important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap}
+
+/* responsive */
+@media (max-width: 1100px){
+  .layout{grid-template-columns:1fr}
+}
+
+/* File: js/components.js */
+(() => {
+  // Helper to attach a shadow with shared styles
+  const inject = (el, html) => {
+    const root = el.attachShadow({ mode: 'open' });
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'assets/styles.css';
+    root.appendChild(link);
+    const wrap = document.createElement('div');
+    wrap.innerHTML = html.trim();
+    root.appendChild(wrap);
+    return root;
+  };
+
+  // <st-header>
+  customElements.define('st-header', class extends HTMLElement {
+    connectedCallback(){
+      const r = inject(this, `
+        <header class="st-header__inner">
+          <div class="st-header__title"><slot name="title">Street Transformations</slot></div>
+          <div class="st-header__right"><slot name="right"></slot></div>
+        </header>
+      `);
+    }
+  });
+
+  // <st-panel>
+  customElements.define('st-panel', class extends HTMLElement {
+    connectedCallback(){
+      const title = this.getAttribute('title') || '';
+      inject(this, `
+        <section class="panel">
+          ${title ? `<div class="panel__header">${title}</div>` : ''}
+          <div class="panel__body"><slot></slot></div>
+        </section>
+      `);
+    }
+  });
+
+  // <st-location-picker>
+  customElements.define('st-location-picker', class extends HTMLElement {
+    connectedCallback(){
+      const placeholder = this.getAttribute('placeholder') || 'Search…';
+      const root = inject(this, `
+        <div class="lp">
+          <label class="visually-hidden" for="q">Location Picker</label>
+          <input id="q" type="search" placeholder="${placeholder}" />
+          <button type="button">Go</button>
+        </div>
+      `);
+      // No behavior wired yet — purely scaffold for static content
+    }
+  });
+
+  // <st-street-list>
+  customElements.define('st-street-list', class extends HTMLElement {
+    connectedCallback(){
+      const r = inject(this, `<ul class="streets"><slot></slot></ul>`);
+    }
+  });
+
+  // <st-map-panel>
+  customElements.define('st-map-panel', class extends HTMLElement {
+    connectedCallback(){
+      inject(this, `
+        <div class="map-shell">
+          <div class="map-canvas" aria-label="Map placeholder"></div>
+          <slot></slot>
+        </div>
+      `);
+    }
+  });
+
+  // <st-post-types>
+  customElements.define('st-post-types', class extends HTMLElement {
+    connectedCallback(){
+      inject(this, `<div class="post-types"><slot></slot></div>`);
+    }
+  });
+})();
+
+/* File: js/main.js */
+(() => {
+  // This file is intentionally minimal: it shows where you'd add behavior later.
+  // You can select any custom element and inject static content, e.g.:
+  // document.querySelector('st-panel[title="Detail View"]').shadowRoot
+  //   .querySelector('.panel__body')
+  //   .insertAdjacentHTML('beforeend', '<p>Static paragraph…</p>');
+})();

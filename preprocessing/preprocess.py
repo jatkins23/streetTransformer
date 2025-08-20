@@ -24,7 +24,7 @@ print(f'Using "{project_path}" as `project_path')
 def save_locations(locations_gdf:gpd.GeoDataFrame, save_path:Path) -> None:
     save_path.mkdir(parents=True, exist_ok=True)
     copy_gdf = locations_gdf.copy()
-    copy_gdf['StreetNames'] = copy_gdf['StreetNames'].apply(lambda x: ' | '.join(x))
+    copy_gdf['crossstreets'] = copy_gdf['crossstreets'].apply(lambda x: ' | '.join(x))
 
     copy_gdf.to_file(save_path)
 

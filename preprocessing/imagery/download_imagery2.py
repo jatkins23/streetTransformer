@@ -255,7 +255,7 @@ def download_and_stitch_gdf(
     zoom: int,
     save_dir: Path,
     service_url_template: str=TILE_URL_TEMPLATE,
-    id_col: Optional[str] = 'NODEID', # TODO: should be location_id
+    id_col: Optional[str] = 'location_id',
     geom_col: str = "geometry",
     radius: int = 1,
     fill_color: Tuple[int, int, int] = (0, 0, 0),

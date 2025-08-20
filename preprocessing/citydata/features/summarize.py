@@ -3,7 +3,7 @@ import geopandas as gpd
 from typing import List
 
 DEFAULT_OSM_FEATURES = ['osmid_original', 'street_count','buffer']
-DEFAULT_LION_FEATURES = ['NODEID', 'StreetNames']
+DEFAULT_LION_FEATURES = ['location_id', 'crossstreets']
 
 def join_feature(location_buffer_gdf:gpd.GeoDataFrame, feature_gdf_p:gpd.GeoDataFrame, 
                  feature_shorthand:str='feat', features_to_keep:List[str]=DEFAULT_LION_FEATURES) -> gpd.GeoDataFrame:

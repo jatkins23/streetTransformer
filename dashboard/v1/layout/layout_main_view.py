@@ -16,8 +16,8 @@ def main_card():
     return dbc.Card(
         color="dark", inverse=True,
         children=dbc.CardBody([
-            #input_view_geocode(),
-            input_view_gmailchips(),
+            input_view_geocode(),
+            #input_view_gmailchips(),
             # Main Map
             dl.Map(
                 id="map",

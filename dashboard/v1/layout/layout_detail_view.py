@@ -13,12 +13,80 @@ sys.path.append(str(dashboard_root))
 from setup import YEARS
 
 def detail_images_card():
-    pass
+    component = dbc.CardBody([
+            html.Div(
+                "No location selected",
+                id="marker-info",
+                className="border border-warning p-2 mb-3",
+                style={"whiteSpace": "pre-wrap"}
+            ),
+            # Image Grid
+            html.Div(
+                id="detail-images",
+                style={"display": "flex", "flexWrap": "wrap", "marginBottom": "1rem"}
+            ),
+            # Detail grid slider
+            html.Div([
+                html.Label("Detail Grid Year:", className="text-light"),
+                dcc.Slider(
+                    id="detail-slider", min=YEARS[0], max=YEARS[-1], step=2,
+                    marks={y: {'label': str(y), 'style': {'color': 'lightgray'}} for y in YEARS},
+                    value=YEARS[-1], disabled=True
+                )
+            ], style={"marginBottom": "1rem"})
+        ]
+    )
+    
+    return component
 
-def detail_stats_card():
-    pass
 
-def detail_documents():
+def detail_citydata_card():
+    # citydata_features = html.Div([
+    #     html.Label("Location Features", className="text-light"),
+    #     dash_table.DataTable(
+    #         id="detail-table",
+    #         style_table={'overflowX': 'auto'},
+    #         style_header={'backgroundColor': '#333', 'color': 'white'},
+    #         style_cell={'backgroundColor': '#222', 'color': 'white', 'textAlign': 'left'},
+    #     )
+    # ], style={"marginBottom": "1rem"})
+    citydata_features = html.Div([
+        html.Label("Location Features", className="text-light"),
+        dash_table.DataTable(
+            id="detail-table",
+            style_table={'overflowX': 'auto'},
+            style_header={
+                'backgroundColor': '#333',
+                'color': 'white',
+                'textAlign': 'center'
+            },
+            style_cell={
+                'backgroundColor': '#222',
+                'color': 'white',
+                'textAlign': 'center'  # Center all cell content
+            },
+            style_data_conditional=[
+                {
+                    'if': {'filter_query': '{value} = Y'},
+                    'backgroundColor': '#d4edda',  # Light green
+                    'color': '#155724'
+                },
+                {
+                    'if': {'filter_query': '{value} = N'},
+                    'backgroundColor': '#f8d7da',  # Light red
+                    'color': '#721c24'
+                }
+            ]
+        )
+    ], style={"marginBottom": "1rem"})
+
+    component = dbc.CardBody([
+        citydata_features
+    ])
+    
+    return component
+
+def detail_documents_card():
     pass
 
 def detail_cardHeader(size_options:List[int]=[1,3,5], options_placeholder='Select detail size..'):
@@ -52,38 +120,11 @@ def detail_card():
     element = dbc.Card(
         color="dark", inverse=True,
         children=[
-            detail_cardHeader(),                    
+            detail_cardHeader(),
+            detail_images_card(),
+            detail_citydata_card(),
             dbc.CardBody([
-                html.Div(
-                    "No location selected",
-                    id="marker-info",
-                    className="border border-warning p-2 mb-3",
-                    style={"whiteSpace": "pre-wrap"}
-                ),
-                # Image Grid
-                html.Div(
-                    id="detail-images",
-                    style={"display": "flex", "flexWrap": "wrap", "marginBottom": "1rem"}
-                ),
-                # Detail grid slider
-                html.Div([
-                    html.Label("Detail Grid Year:", className="text-light"),
-                    dcc.Slider(
-                        id="detail-slider", min=YEARS[0], max=YEARS[-1], step=2,
-                        marks={y: {'label': str(y), 'style': {'color': 'lightgray'}} for y in YEARS},
-                        value=YEARS[-1], disabled=True
-                    )
-                ], style={"marginBottom": "1rem"}),
                 # Data Table
-                html.Div([
-                    html.Label("Location Features", className="text-light"),
-                    dash_table.DataTable(
-                        id="detail-table",
-                        style_table={'overflowX': 'auto'},
-                        style_header={'backgroundColor': '#333', 'color': 'white'},
-                        style_cell={'backgroundColor': '#222', 'color': 'white', 'textAlign': 'left'},
-                    )
-                ], style={"marginBottom": "1rem"}),
                 # Corner Links
                 html.Div([
                     html.Label("Project Documents:", className="text-light"),

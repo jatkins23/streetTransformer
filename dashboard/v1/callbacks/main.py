@@ -6,15 +6,15 @@ import mercantile
 import pandas as pd
 import numpy as np
 
-from setup import YEARS, ZLEVEL, TILE_URL_TEMPLATE, GEOCODE_API, LION_DB
+from setup import YEARS, ZLEVEL, TILE_URL_TEMPLATE, GEOCODE_API, LOCATIONS_GDF
 
-intersections = LION_DB['StreetNames'].tolist()
-df = LION_DB.copy()
-df[['street1','street2']] = pd.DataFrame(df['StreetNames'].tolist(), df.index)
+locations_gdf = LOCATIONS_GDF['crossstreets'].tolist()
+df = LOCATIONS_GDF.copy()
+df[['street1','street2']] = pd.DataFrame(df['crossstreets'].tolist(), df.index)
 all_streets = np.sort(pd.concat([df['street1'], df['street2']]).unique())
 
 adjacency = {}
-for a, b in intersections:
+for a, b in locations_gdf:
     adjacency.setdefault(a, set()).add(b)
     adjacency.setdefault(b, set()).add(a)
 

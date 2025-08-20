@@ -94,14 +94,18 @@ def load_lion_universe(nodes_gdf:gpd.GeoDataFrame, node_names_gdf:gpd.GeoDataFra
         how = 'inner'
     ).rename({'StreetName_cleaned': 'StreetNames'}, axis=1).drop(['VIntersect', 'GLOBALID'], axis=1)
 
-    # 4) Now filter down to the specific boudnary
-    locations_clipped = clip_gdf_by_boundary(nodes_with_streetnames, universe)
+    # 4) Now filter down to the specific boundary -- TODO: Skipping
+    # locations_clipped = clip_gdf_by_boundary(nodes_with_streetnames, universe)
+    locations_clipped = nodes_with_streetnames
 
     # 5) Save if necessary
     if outfile:
         locations_clipped.to_file(outfile)
 
-    # 6) Return
+    # 6) Rename NODEID to location_id
+    #locations_clipped = locations_clipped.rename({'NODEID':'location_id', 'StreetNames': 'crossstreets'})
+
+    # 7) Return
     return locations_clipped
 
 def load_lion_default(universe='all', outfile=None): # TODO: this should take in a unvierse_name, check if it exists in data/universes, if not, geocode it and create a new one. Also should be named better and refactored to reflect this. Maybe should be generalized to allow for different sources

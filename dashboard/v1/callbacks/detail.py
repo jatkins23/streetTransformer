@@ -1,34 +1,56 @@
-# TODO
+# TODO: break this out
 from dash import Output, Input, State, no_update, html
+from setup import YEARS, PROJECTS_GDF, FEATURES_GDF
+import pandas as pd
 import numpy as np
 
 # Imagery Card
-def imagery_card(grid_data, year):
-    # Return a card with the images
-    if not grid_data:
-        return no_update
-    items = grid_data.get(str(year), [])
+# def imagery_card(grid_data, year):
+#     # Return a card with the images
+#     if not grid_data:
+#         return no_update
+#     items = grid_data.get(str(year), [])
 
-    pass
+#     pass
 
 
 # Features Card
-def get_feature_data(latlng):
-    return np.arange(1,5)
+def get_feature_data(lat, lng):
+    
+    full = len(YEARS)
+    half = np.floor(full/2)
 
-def featurize_imagery(images):
-    return np.arange(1,5)
+    datatable = pd.DataFrame(
+        {
+            'years': YEARS,
+            'ped_plaza': np.repeat('N', full),
+            'bike_rte': np.concat([np.repeat('N', half), np.repeat('Y', half)]),
+            'bus_lane': np.concat([np.repeat('N', half), np.repeat('Y', half)]),
+            'traffic_calming': np.concat([np.repeat('N', half+2), np.repeat('Y', half-2)])
+        }
+    )
+    return datatable.set_index('years').T
 
-def featurize_documents(documents):
-    return np.arange(1,5)
+def get_projects_data(lat, lng):
+    datatable = pd.DataFrame(
+        columns = {'years': YEARS},
 
-def features_card(latlng=None, images = None, documents=None,):
-    # Return a card with the relevant location data
-    city_data = get_feature_data(latlng, )
-    features_from_imagery = featurize_imagery(images)
-    features_from_documents = featurize_documents(documents)
+    )
+    return datatable
 
-    return np.concat([city_data, features_from_imagery, features_from_documents], axis=1)
+# def featurize_imagery(images):
+#     return np.arange(1,5)
+
+# def featurize_documents(documents):
+#     return np.arange(1,5)
+
+# def features_card(latlng=None, images = None, documents=None,):
+#     # Return a card with the relevant location data
+#     city_data = get_feature_data(latlng, )
+#     features_from_imagery = featurize_imagery(images)
+#     features_from_documents = featurize_documents(documents)
+
+#     return np.concat([city_data, features_from_imagery, features_from_documents], axis=1)
 
 # Links Card
 def assemble_documents(latlng=None):
@@ -55,17 +77,51 @@ def register_detail_callbacks(app):
             return no_update
         items = grid_data.get(str(year), [])
         imgs = []
-        table_data = []
+        table_data = get_feature_data(40.69625, -73.98867).to_dict(orient='records')
         links = []
         for _, itm in enumerate(items):
             style = {"width": "30%", "margin": ""}
             imgs.append(html.Img(src=itm["url"], style=style))
             table_data.append({"x": itm["x"], "y": itm["y"], "url": itm["url"]})
-        columns = [{"name": c, "id": c} for c in ["x", "y", "url"]]
-        corner_idxs = [0, len(items)-1] if len(items) > 1 else [0]
-        for ci in corner_idxs:
-            itm = items[ci]
+
+        data_columns = [{'name': str(y), 'id': str(y)} for y in YEARS]
+
+        documents = [0, len(items)-1] if len(items) > 1 else [0]
+        for doc in documents:
+            itm = items[doc]
             links.append(html.Div(html.A(
                 f"Tile {itm['x']},{itm['y']}", href=itm['url'], target="_blank"
             ), style={"marginBottom": "0.5rem"}))
-        return imgs, table_data, columns, links
+        return imgs, table_data, data_columns, links
+    
+    # @app.callback(
+    #     Output('detail-table', 'data'),
+    #     Output('detail-table', 'columns'),
+    #     Output('detail-table', 'style_data_conditional'),
+    #     Input('some-trigger', 'value')
+    # )
+    # def update_table(trigger_value)
+
+
+def get_conditional_formatting(columns):
+    return [
+        {
+            'if': {
+                'column_id': col['id'],
+                'filter_query': f'{{{col["id"]}}} = "Y"'
+            },
+            'backgroundColor': '#d4edda',  # Light green
+            'color': '#155724'
+        }
+        for col in columns
+    ] + [
+        {
+            'if': {
+                'column_id': col['id'],
+                'filter_query': f'{{{col["id"]}}} = "N"'
+            },
+            'backgroundColor': '#f8d7da',  # Light red
+            'color': '#721c24'
+        }
+        for col in columns
+    ]

@@ -16,13 +16,14 @@ project_dir = Path(__file__).resolve().parent.parent.parent
 print(f"Treating '{project_dir}' as `project_dir`")
 sys.path.append(str(project_dir))
 
-#from src.streetTransformer.utils.geodata import safe_load_wkt
 from .features.load import load_standard
 from .features.clean import clean_bike_rtes, clean_bus_lanes, clean_ped_plaza, clean_traffic_calming # Note: used in 
 from .features.summarize import count_features_by_location
 #from preprocessing.data_load.load_intersections import load_location
 from .geoprocessing import buffer_locations
 from preprocessing.data_load.load_lion import load_lion_default
+from src.streetTransformer.locations.location import Location
+import tqdm
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -42,6 +43,8 @@ FEATURE_METADATA = {
                         'load_method': 'standard', 'clean_method': clean_traffic_calming, 
                         'shorthand': 'calm', 'date_col': 'installdate'}
 }
+
+UNIVERSES_PATH = Path('src/streetTransformer/data/universes')
 
 # TODO the `[load|clean|summarize]_all_files` functions are extemely duplicative and can be 
 def load_all_feature_files(feat_metadata:Dict[str, Dict]=FEATURE_METADATA, root_data_path:Path=ROOT_PATH, silent:bool=False) -> Dict[str, gpd.GeoDataFrame]:
@@ -159,6 +162,19 @@ def count_features_by_buffer_time(locations_gdf:gpd.GeoDataFrame, buffer_width:i
     # Update the previous function with some time element. Can actually probably replace it.
     pass
 
+# TODO: Move to a better place
+def load_locations(universe_name:str, universes_path:Path=UNIVERSES_PATH, source:str='lion', force_new_locations:bool=False):
+    try:
+        locations_gdf = gpd.read_feather(universes_path / universe_name / 'locations.feather')
+        print(f'universe "{universe_name}" loaded from memory')
+    except:
+        if source == 'lion':
+            locations_gdf = load_lion_default(args.universe) # TODO: it should take in a configs
+        else:
+            print(f'Unknown universe `source`: "{source}"')
+
+    return locations_gdf
+
 if __name__ == '__main__':
     # Parse args
     parser = argparse.ArgumentParser(description='Collect Project Features from City Data Files')
@@ -166,12 +182,26 @@ if __name__ == '__main__':
     parser.add_argument('universe', type=str, help="Specify universe. Either a saved one or a place to geocode. e.g.: 'nyc' or 'Downtown Brooklyn, New York, USA'")
     parser.add_argument('-o','--outfile', type=Path, help="Path to the output file")
     parser.add_argument('-s','--silent', default=False, help="Run in silent mode (minimize console output)")
+    parser.add_argument('-f','--force-new-locations', default=False, help="Re-pull the universe")
 
     args = parser.parse_args()
 
-    # Count Features by buffer
-    #nodes, _ = load_location(universe) # TODO: add `silent` 
-    locations_gdf = load_lion_default(args.universe) # TODO: it should take in a config.s
+    # Load the locations.gdf
+    locations_gdf = load_locations(args.universe, universes_path=UNIVERSES_PATH, source='lion', force_new_locations=args.force_new_locations)
+
+    # Turn them into "Locations" TODO: in future, store them as Locations
+    total_locations = locations_gdf.shape[0]
+    for row in tqdm.tqdm(locations_gdf.head(10).itertuples(), total=total_locations):
+        temp_location = Location(
+            location_id=row.location_id,
+            universe_name=args.universe_name,
+            crossstreets=row.crossstreets,
+            centroid=row.geometry,
+            years=YEARS
+        )
+    
+
+    
     output = count_features_for_locations(locations_gdf, buffer_width=100, outfile=args.outfile, silent= args.silent) # TODO: input buffer-width?
     print(output)
     

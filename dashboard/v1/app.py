@@ -33,9 +33,9 @@ page_layout = dbc.Container(
 )
 app.layout = dmc.MantineProvider(page_layout)
 
-#register_main_callbacks(app)
+register_main_callbacks(app)
 register_detail_callbacks(app)
-register_input_callbacks(app)
+#register_input_callbacks(app)
 
 
 if __name__ == '__main__':

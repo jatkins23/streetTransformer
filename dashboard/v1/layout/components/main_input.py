@@ -2,12 +2,14 @@ from dash import html, dcc
 import dash_mantine_components as dmc
 import dash_bootstrap_components as dbc
 import pandas as pd
-from setup import LION_DB
+from setup import LOCATIONS_GDF
 import numpy as np
 
-intersections = LION_DB['StreetNames'].tolist()
-df = LION_DB.copy()
-df[['street1','street2']] = pd.DataFrame(df['StreetNames'].tolist(), df.index)
+intersections = LOCATIONS_GDF['crossstreets'].tolist()
+
+df = LOCATIONS_GDF.copy()
+#print(pd.DataFrame(df['crossstreets'].tolist(), df.index))
+df[['street1','street2']] = pd.DataFrame(df['crossstreets'].tolist(), df.index)
 all_streets = np.sort(pd.concat([df['street1'], df['street2']]).unique())
 
 def input_view_geocode():
