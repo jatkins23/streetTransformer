@@ -4,12 +4,12 @@ import sys
 import geopandas as gpd
 
 # Set Local environment
-project_path = Path(__file__).resolve().parent.parent
-print(f'Treating "{project_path}" as `project_path`')
-sys.path.append(str(project_path))
+# project_path = Path(__file__).resolve().parent.parent.parent.parent
+# print(f'compare: Treating "{project_path}" as `project_path`')
+# sys.path.append(str(project_path))
 
 # Local imports
-from src.streetTransformer.locations.location import Location
+from ..locations.location import Location
 
 def get_compare_data_for_location_id_years(locations_gdf: gpd.GeoDataFrame, location_id:int, start_year:int|str, end_year:int|str, universe_name:str):
     row = locations_gdf[locations_gdf['location_id'] == location_id].iloc[0].T.to_dict()

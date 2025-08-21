@@ -3,12 +3,14 @@ from pathlib import Path
 from google import genai
 from google.genai import types
 from typing import List, Optional, Any, Union, Dict
+import random
+import time
 import json
 import concurrent.futures as cf
 
 
-base_dir = Path(__file__).resolve().parent.parent.parent
-print(f'Treating "{base_dir}" as `base_dir`')
+# project_path = Path(__file__).resolve().parent.parent.parent.parent
+# print(f'Treating "{project_path}" as `project_path`')
 FLUSH_EVERY = 10
 
 import os
@@ -51,23 +53,209 @@ def response_to_text(resp: Any) -> str:
             return val if isinstance(val, str) else str(val)
     return str(resp)
 
-def run_individual_model(system_prompt:str, files:List[Path], model_name:str='gemini-2.5-flash', client:genai.Client=genai.Client(), outfile:Optional[Path]=None):
+# Helper: decide if an exception is retryable (rate limit or transient)
+def _is_retryable(err: Exception) -> bool:
+    # Try to read structured fields if present
+    status = getattr(err, "status", None) or getattr(err, "code", None)
+    http_status = getattr(err, "http_status", None)
+
+    # Common signals
+    text = str(err).lower()
+
+    if http_status in (408, 429, 500, 502, 503, 504):
+        return True
+    if status in ("RESOURCE_EXHAUSTED", "UNAVAILABLE", "ABORTED", "DEADLINE_EXCEEDED"):
+        return True
+    # Fallback string checks
+    if "rate limit" in text or "quota" in text or "resource exhausted" in text:
+        return True
+    if "temporarily unavailable" in text or "retry" in text:
+        return True
+    return False
+
+# def run_individual_model(
+#     system_prompt: str,
+#     files: List[Path],
+#     model_name: str = "gemini-2.5-flash",
+#     client: genai.Client = genai.Client(),
+#     outfile: Optional[Path] = None,
+#     *,
+#     # throttling + backoff controls
+#     per_request_delay: float = 0.5,   # fixed sleep before each call
+#     max_retries: int = 6,             # total attempts = 1 + retries
+#     initial_backoff: float = 1.0,     # seconds
+#     max_backoff: float = 30.0,        # cap
+#     jitter: bool = True,              # add randomization to backoff
+# ):
+#     """
+#     Calls Gemini with a small pre-call delay and exponential backoff
+#     for rate limits/transient errors. Returns the response text.
+#     """
+#     config = setup_config(system_prompt)
+#     contents = setup_contents(files=files, client=client)
+
+#     # Optional: small fixed delay to stay under QPS limits when called in a loop
+#     if per_request_delay > 0:
+#         time.sleep(per_request_delay)
+
+#     attempt = 0
+#     backoff = initial_backoff
+
+#     while True:
+#         try:
+#             response = client.models.generate_content(
+#                 model=model_name,
+#                 contents=contents,
+#                 config=config,
+#             )
+
+#             text = response_to_text(response)
+
+#             if outfile:
+#                 outfile.parent.mkdir(parents=True, exist_ok=True)
+#                 with outfile.open("w+", encoding="utf-8") as f:
+#                     f.write(text)
+
+#             return text
+
+#         except Exception as e:
+#             attempt += 1
+#             if attempt > max_retries or not _is_retryable(e):
+#                 # Non-retryable or out of retries: re-raise
+#                 raise
+
+#             # Exponential backoff with optional jitter
+#             sleep_s = backoff
+#             if jitter:
+#                 # full jitter
+#                 sleep_s = random.uniform(0, backoff)
+
+#             time.sleep(sleep_s)
+#             backoff = min(backoff * 2, max_backoff)
+
+# def run_individual_model(system_prompt:str, files:List[Path], model_name:str='gemini-2.5-flash', client:genai.Client=genai.Client(), outfile:Optional[Path]=None):
+#     config = setup_config(system_prompt)
+#     contents = setup_contents(files=files, client=client)
+
+#     # geocode
+#     response = client.models.generate_content(
+#         model=model_name, 
+#         contents=contents,
+#         config=config,
+#     )
+
+#     if outfile:
+#         outfile.parent.mkdir(parents=True, exist_ok=True)
+#         with outfile.open('w+', encoding='utf-8') as f:
+#             f.write(response_to_text(response))
+
+#     return response_to_text(response)
+
+import time
+import random
+import threading
+from collections import deque
+from pathlib import Path
+from typing import List, Optional
+import google.genai as genai  # your existing import
+
+# ---- Simple thread-safe RPM limiter ----
+class RateLimiter:
+    """Allow up to max_calls per 'period' seconds (sliding window)."""
+    def __init__(self, max_calls: int, period: float = 60.0):
+        self.max_calls = max_calls
+        self.period = period
+        self._calls = deque()
+        self._lock = threading.Lock()
+
+    def acquire(self):
+        with self._lock:
+            now = time.time()
+            # drop timestamps older than the window
+            while self._calls and now - self._calls[0] >= self.period:
+                self._calls.popleft()
+
+            if len(self._calls) >= self.max_calls:
+                # sleep until the oldest call exits the window
+                wait = self.period - (now - self._calls[0]) + 0.01
+                time.sleep(max(0.0, wait))
+                # after sleeping, clean up again
+                now = time.time()
+                while self._calls and now - self._calls[0] >= self.period:
+                    self._calls.popleft()
+
+            self._calls.append(time.time())
+
+
+# a module-level limiter you can share across calls/threads
+DEFAULT_LIMITER = RateLimiter(max_calls=15, period=60.0)
+
+def _is_retryable(err: Exception) -> bool:
+    status = getattr(err, "status", None) or getattr(err, "code", None)
+    http_status = getattr(err, "http_status", None)
+    text = str(err).lower()
+
+    if http_status in (408, 429, 500, 502, 503, 504):
+        return True
+    if status in ("RESOURCE_EXHAUSTED", "UNAVAILABLE", "ABORTED", "DEADLINE_EXCEEDED"):
+        return True
+    if any(s in text for s in ("rate limit", "quota", "resource exhausted", "temporarily unavailable", "retry")):
+        return True
+    return False
+
+
+def run_individual_model(
+    system_prompt: str,
+    files: List[Path],
+    model_name: str = "gemini-2.5-flash",
+    client: genai.Client = genai.Client(),
+    outfile: Optional[Path] = None,
+    *,
+    limiter: RateLimiter = DEFAULT_LIMITER,  # pass a shared limiter if you want
+    max_retries: int = 6,
+    initial_backoff: float = 1.0,
+    max_backoff: float = 30.0,
+    jitter: bool = True,
+):
+    """
+    Calls Gemini with an RPM limiter (default 15/min) and exponential backoff.
+    Returns the response text.
+    """
     config = setup_config(system_prompt)
     contents = setup_contents(files=files, client=client)
 
-    # geocode
-    response = client.models.generate_content(
-        model=model_name, 
-        contents=contents,
-        config=config,
-    )
+    # Gate this call so we do not exceed 15 RPM.
+    limiter.acquire()
 
-    if outfile:
-        outfile.parent.mkdir(parents=True, exist_ok=True)
-        with outfile.open('w+', encoding='utf-8') as f:
-            f.write(response_to_text(response))
+    attempt = 0
+    backoff = initial_backoff
 
-    return response_to_text(response)
+    while True:
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=contents,
+                config=config,
+            )
+            text = response_to_text(response)
+
+            if outfile:
+                outfile.parent.mkdir(parents=True, exist_ok=True)
+                with outfile.open("w+", encoding="utf-8") as f:
+                    f.write(text)
+
+            return text
+
+        except Exception as e:
+            attempt += 1
+            if attempt > max_retries or not _is_retryable(e):
+                raise
+
+            # Exponential backoff with optional jitter
+            sleep_s = random.uniform(0, backoff) if jitter else backoff
+            time.sleep(sleep_s)
+            backoff = min(backoff * 2, max_backoff)
+
 
 def run_many_inputs(
     inputs: Dict[str, Dict[str, Any]],
@@ -104,7 +292,7 @@ def run_many_inputs(
             files=files,
             client=client,
             outfile=outfile,
-            model=model,
+            model_name=model,
         )
         results[alias] = resp
 

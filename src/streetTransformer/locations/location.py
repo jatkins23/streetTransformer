@@ -9,7 +9,7 @@ import pandas as pd
 from pydantic import BaseModel
 
 PROJECT_PATH = Path(__file__).resolve().parent.parent.parent.parent
-print(f'Treating "{PROJECT_PATH}" as `project_path`')
+print(f'location: Treating "{PROJECT_PATH}" as `project_path`')
 sys.path.append(PROJECT_PATH)
 
 UNIVERSE_NAME = 'caprecon3'
@@ -22,6 +22,15 @@ def _generate_universe_path(universe_name:str) -> Path:
         return universe_path
     else:
         raise FileNotFoundError(f"{universe_path} doesn't exist!")
+    
+def _read_filtered_json(path:Path, location_id):
+    rows = []
+    with open(path, "r") as f:
+        for line in f:
+            row = json.loads(line)
+            if row.get("location_id") == location_id:
+                rows.append(row)
+    return rows
 
 from shapely.geometry import Point
 from .location_geometry import LocationGeometry
@@ -41,7 +50,8 @@ class Location:
 
         # Universe Path
         abs_universe_path = universe_path or _generate_universe_path(self.universe_name)
-        self.universe_path:Path = abs_universe_path.relative_to(PROJECT_PATH)
+        #self.universe_path:Path = abs_universe_path.relative_to(PROJECT_PATH)
+        self.universe_path = abs_universe_path
     
         # Geometry - ensure centroid is 4326 somehow
         self.geometry = LocationGeometry(centroid=(centroid.x, centroid.y))
@@ -57,6 +67,9 @@ class Location:
         
         # Load citydata Features
         self.citydata_features = self.load_citydata_features()
+
+        # Results Placeholder
+        self.results = {}
     
     # Dunders
     def __repr__(self):
@@ -149,6 +162,16 @@ class Location:
     
     def load_citydata_projects(self):
         return {}
+    
+
+# Example usage
+    def load_results_data(self, file_path:Path, model_name:str):
+        # Reads in an ndjson that 
+        try:
+            data = _read_filtered_json(file_path, self.location_id)
+            self.results[model_name] = data
+        except Exception as e:
+            print(e)
     
     # Output functions
     def to_dict(self) -> dict:
