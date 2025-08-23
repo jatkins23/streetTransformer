@@ -11,13 +11,9 @@ import json
 import pandas as pd
 import geopandas as gpd
 import xyzservices.providers as xyz
-from tqdm import tqdm
 from pandas.api.types import is_string_dtype, is_object_dtype
 
-root_path = Path(__file__).resolve().parent.parent.parent
-print(root_path)
-sys.path.append(str(root_path))
-from src.streetTransformer.utils.geocode_crossstreets import geocode_intersection
+from streettransformer.utils.geocode_crossstreets import geocode_intersection
 from align_docs_and_projects import pipeline, DOCUMENTS_PROCESSED_PATH
 
 

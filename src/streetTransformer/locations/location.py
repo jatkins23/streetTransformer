@@ -8,16 +8,10 @@ import geopandas as gpd
 import pandas as pd
 from pydantic import BaseModel
 
-PROJECT_PATH = Path(__file__).resolve().parent.parent.parent.parent
-print(f'location: Treating "{PROJECT_PATH}" as `project_path`')
-sys.path.append(PROJECT_PATH)
+from ..config.constants import UNIVERSES_PATH, YEARS
 
-UNIVERSE_NAME = 'caprecon3'
-UNIVERSE_PATH = PROJECT_PATH / 'src/streetTransformer/data/universes/' / UNIVERSE_NAME
-YEARS = os.listdir(UNIVERSE_PATH / 'imagery')
-
-def _generate_universe_path(universe_name:str) -> Path:
-    universe_path = PROJECT_PATH / 'src/streetTransformer/data/universes' / universe_name
+def _generate_universe_path(universe_name:str, universes_path:Path) -> Path:
+    universe_path = universes_path / universe_name
     if universe_path.exists():
         return universe_path
     else:
@@ -49,7 +43,7 @@ class Location:
         self.years:List[str] = [str(y) for y in years]
 
         # Universe Path
-        abs_universe_path = universe_path or _generate_universe_path(self.universe_name)
+        abs_universe_path = universe_path or _generate_universe_path(self.universe_name, UNIVERSES_PATH)
         #self.universe_path:Path = abs_universe_path.relative_to(PROJECT_PATH)
         self.universe_path = abs_universe_path
     

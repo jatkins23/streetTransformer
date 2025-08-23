@@ -9,14 +9,13 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 
-dir_path = Path(__file__).resolve().parent.parent.parent
-print(f'Treating "{dir_path}" as `dir_path')
+from ..config import DATA_PATH, UNIVERSES_PATH, DOCUMENTS_PATH
 
 # Universe
-UNIVERSE_PATH = dir_path / 'src/streetTransformer/data/universes/caprecon3'
+UNIVERSE_NAME = 'caprecon3'
+UNIVERSE_PATH = UNIVERSES_PATH / UNIVERSE_NAME
 
 # Documents
-DOCUMENTS_PATH = dir_path.parent / 'proj_data/project_documents/'
 documents_df = pd.read_csv(DOCUMENTS_PATH / 'projects_df.csv', index_col=0, na_values='.')
 
 # Imagery
@@ -26,7 +25,7 @@ IMAGERY_PATH = UNIVERSE_PATH / 'imagery/'
 LOCATIONS_PATH = UNIVERSE_PATH / 'locations.feather'
 
 locations_gdf = gpd.read_feather(LOCATIONS_PATH)
-DOCUMENTS_PROCESSED_PATH = dir_path / 'data/project_documents/geocoded'
+DOCUMENTS_PROCESSED_PATH = DATA_PATH / 'processing/documents/raw_to_gemini_crossstreets'
 documents_ndjson = DOCUMENTS_PROCESSED_PATH / 'gemini_output.ndjson'
 
 ## Pipeline

@@ -12,13 +12,8 @@ from shapely import geometry
 from pyproj import CRS
 import mercantile
 
-from preprocessing.imagery.geoprocessing import generate_buffer_geometry, load_tile_reference, complete_dataframe, set_buffer_width
-
-project_dir = Path(__file__).resolve().parent.parent.parent
-print(f'Using "{project_dir}" as `project_dir`')
-sys.path.append(str(project_dir))
-
-from preprocessing.data_load.load_lion import load_lion_default
+from ..imagery.geoprocessing import generate_buffer_geometry, load_tile_reference, complete_dataframe, set_buffer_width
+from ..data_load.load_lion import load_lion_default
 
 def buffer_and_load(locations_gdf: gpd.GeoDataFrame, tile_ref_gdf:gpd.GeoDataFrame, 
                     static_path:Path, buffer_width:int|str='variable', buffer_type:str='round') -> pd.DataFrame:
@@ -72,16 +67,15 @@ def buffer_and_load(locations_gdf: gpd.GeoDataFrame, tile_ref_gdf:gpd.GeoDataFra
 
 # TODO: write a version that gathers imagery
 
-def gather_imagery_for_locations(
-        locations_gdf:gpd.GeoDataFrame, 
-        tile_static_path:Path, 
-        tile_ref_path:Path,
-        save_path:Path, subset:Optional[List[int]]=None) -> None: # TODO: Return DataFrame
-    # Load the reference_tiles:
-    tile_static_path = load_tile_reference(tile_ref_path)
+# def gather_imagery_for_locations(
+#         locations_gdf:gpd.GeoDataFrame, 
+#         tile_static_path:Path, 
+#         tile_ref_path:Path,
+#         save_path:Path, subset:Optional[List[int]]=None) -> None: # TODO: Return DataFrame
+#     # Load the reference_tiles:
+#     tile_static_path = load_tile_reference(tile_ref_path)
 
-    # 
-
+#     # 
 
 if __name__ == '__main__':
     # Parse Args

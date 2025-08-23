@@ -10,17 +10,14 @@ import math
 import ast
 import json
 
+from ..config import UNIVERSES_PATH, DATA_PATH
 
 
 # Set up local test environment
-PROJECT_PATH = Path(os.getcwd()).resolve()
-print(f'Treating "{PROJECT_PATH}" as `project_path`')
-sys.path.append(str(PROJECT_PATH))
-
 UNIVERSE_NAME = 'caprecon_plus_control'
-UNIVERSE_PATH = PROJECT_PATH / 'src/streetTransformer/data/universes/' / UNIVERSE_NAME
-DOCS_GEOCODED_FILE =  PROJECT_PATH / 'data/project_documents/geocoded_gemini_to_census2.csv'
-DOCUMENTS_PATH = (PROJECT_PATH / '../proj_data/project_documents/').resolve()
+UNIVERSE_PATH = UNIVERSES_PATH / UNIVERSE_NAME
+DOCS_GEOCODED_FILE =  DATA_PATH / 'processing/documents/crossstreets_to_census_geocoded/geocoded_gemini_to_census2.csv'
+DOCUMENTS_PATH = DATA_PATH / 'raw' / 'documents'
 
 def read_docs_geocoded_json(
     filepath: str|Path,
@@ -147,7 +144,7 @@ def safe_multipoint(points):
         return None
 
 def get_document_paths(documents_df:pd.DataFrame, documents_path:Path=DOCUMENTS_PATH) -> Tuple[pd.Series, pd.Series]:
-    def _generate_doc_paths(project_id:int, title:str, docs:List[str], base_path:Path, project_path:Path=PROJECT_PATH) -> Tuple[List[Path], List[Path]]:
+    def _generate_doc_paths(project_id:int, title:str, docs:List[str], base_path:Path, data_path:Path=DATA_PATH) -> Tuple[List[Path], List[Path]]:
         # Note: some projects have multiple paths
         abs_paths = []
         rel_paths = []
@@ -158,7 +155,7 @@ def get_document_paths(documents_df:pd.DataFrame, documents_path:Path=DOCUMENTS_
             file_name = f'{project_id}--{i}--{stem}.pdf'
             abs_path = base_path / folder / file_name
             abs_paths.append(abs_path)
-            rel_path = os.path.relpath(abs_path, project_path)
+            rel_path = os.path.relpath(abs_path, data_path)
             rel_paths.append(str(rel_path))
 
         return abs_paths, rel_paths
@@ -172,7 +169,7 @@ def get_document_paths(documents_df:pd.DataFrame, documents_path:Path=DOCUMENTS_
             title        = row.name,
             docs         = ast.literal_eval(row.document_links),
             base_path    = DOCUMENTS_PATH,
-            project_path = PROJECT_PATH
+            data_path = DATA_PATH
         )
 
         absolute_paths.append(abs_paths)
@@ -238,7 +235,7 @@ def pipeline(
 
 if __name__ == '__main__':
     UNIVERSE_NAME = 'caprecon_plus_control'
-    universe_path = PROJECT_PATH / 'src/streetTransformer/data/universes/' / UNIVERSE_NAME
+    universe_path = UNIVERSES_PATH / UNIVERSE_NAME
 
     cleaned_gdf = pipeline(
         docs_geocoded_path  = DOCS_GEOCODED_FILE, 

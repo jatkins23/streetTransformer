@@ -3,11 +3,6 @@ import sys
 
 import geopandas as gpd
 
-# Set Local environment
-# project_path = Path(__file__).resolve().parent.parent.parent.parent
-# print(f'compare: Treating "{project_path}" as `project_path`')
-# sys.path.append(str(project_path))
-
 # Local imports
 from ..locations.location import Location
 

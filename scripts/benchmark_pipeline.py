@@ -10,18 +10,14 @@ import pandas as pd
 import geopandas as gpd
 import tqdm
 
-# Set Local environment
-project_path = Path(__file__).resolve().parent.parent
-print(f'Treating "{project_path}" as `project_path`')
-sys.path.append(str(project_path))
-
 # Local imports
-from src.streetTransformer.locations.location import Location # This creates a Location object that holds and converts all of the data for each location
-from src.streetTransformer.llms.run_gemini_model import run_individual_model # Runs a gemini model 
-import src.streetTransformer.llms.models.imagery_describers.gemini_imagery_describers as gemini_imagery_describers
-from src.streetTransformer.comparison.compare import get_image_compare_data, get_compare_data_for_location_id_years, show_images_side_by_side
+from streettransformer.config.constants import UNIVERSES_PATH, TRAFFIC_CALMING_TEST_LOCATION_IDS, YEARS
+from streettransformer.locations.location import Location # This creates a Location object that holds and converts all of the data for each location
+from streettransformer.llms.run_gemini_model import run_individual_model # Runs a gemini model 
+import streettransformer.llms.models.imagery_describers.gemini_imagery_describers as gemini_imagery_describers
+from streettransformer.comparison.compare import get_image_compare_data, get_compare_data_for_location_id_years, show_images_side_by_side
 
-traffic_calming_location_ids = [7571, 8887, 11738, 11800, 12116, 14271, 15283, 15375, 15709, 15852]
+#traffic_calming_location_ids = [7571, 8887, 11738, 11800, 12116, 14271, 15283, 15375, 15709, 15852]
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -41,13 +37,8 @@ if __name__ == '__main__':
     args = parse_args()
     # Process
     # 0) Set universe 
-
-    # UNIVERSE_NAME = 'caprecon_plus_control'
-    # UNIVERSE_PATH = project_path / 'src/streetTransformer/data/universes/' / UNIVERSE_NAME
-    YEARS = list(range(2006, 2025, 2))
-
     universe_name = args.universe_name
-    universe_path = project_path / 'src/streetTransformer/data/universes/' / universe_name
+    universe_path = UNIVERSES_PATH / universe_name
 
     # 1) Load all locations from the project database
     locations_gdf = gpd.read_feather(universe_path / 'locations.feather')
@@ -56,11 +47,11 @@ if __name__ == '__main__':
 
     # 2) Create Location Df
     # locations_gdf = locations_gdf.head(1000)
-    locations_gdf = locations_gdf[locations_gdf['location_id'].isin(traffic_calming_location_ids)]
+    locations_gdf = locations_gdf[locations_gdf['location_id'].isin(TRAFFIC_CALMING_TEST_LOCATION_IDS)]
     total_locations = locations_gdf.shape[0]
 
     # Get comparison 
-    compare = get_image_compare_data(locations_gdf, location_id=args.location_id, start_year=args.start_year, end_year=args.end_year, universe_name=args.universe_name)
+    compare = get_image_compare_data(locations_gdf, location_id=args.location_id, start_year=args.start_year, end_year=args.end_year, universe='caprecon_plus_control')
 
     response = run_individual_model(gemini_imagery_describers.step1_instructions, files=compare)
     if args.display:

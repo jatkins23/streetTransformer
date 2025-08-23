@@ -19,21 +19,14 @@ from .features.clean import clean_bike_rtes, clean_bus_lanes, clean_ped_plaza, c
 from .features.summarize import count_features_by_location
 #from preprocessing.data_load.load_intersections import load_location
 from .geoprocessing import buffer_locations
+from ..data_load.load_lion import load_lion_default
+from ..config import YEARS, OPENNYC_PATH,  UNIVERSES_PATH
 
-project_dir = Path(__file__).resolve().parent.parent.parent
-print(f"Treating '{project_dir}' as `project_dir`")
-sys.path.append(str(project_dir))
-
-from preprocessing.data_load.load_lion import load_lion_default
-from src.streetTransformer.locations.location_geometry import LocationGeometry
-from src.streetTransformer.locations.location import Location
+from streettransformer.locations.location_geometry import LocationGeometry
+from streettransformer.locations.location import Location
 import tqdm
 
-from dotenv import load_dotenv
-load_dotenv()
 
-YEARS = list(range(2006, 2025, 2))
-ROOT_PATH = project_dir / Path(str(os.getenv('OPENNYC_PATH')))
 FEATURE_METADATA = {
     'bike_rtes': {'file_path': 'New_York_City_Bike_Routes_20250722.csv', 
                   'load_method': 'standard', 'clean_method': clean_bike_rtes, 
@@ -52,7 +45,7 @@ FEATURE_METADATA = {
 UNIVERSES_PATH = Path('src/streetTransformer/data/universes')
 
 # TODO the `[load|clean|summarize]_all_files` functions are extemely duplicative and can be 
-def load_all_feature_files(feat_metadata:Dict[str, Dict]=FEATURE_METADATA, root_data_path:Path=ROOT_PATH, silent:bool=False) -> Dict[str, gpd.GeoDataFrame]:
+def load_all_feature_files(feat_metadata:Dict[str, Dict]=FEATURE_METADATA, root_data_path:Path=OPENNYC_PATH, silent:bool=False) -> Dict[str, gpd.GeoDataFrame]:
 
     loaded_gdfs = {}
     if not silent:
@@ -141,7 +134,7 @@ def count_features_for_locations(locations_gdf:gpd.GeoDataFrame, buffer_width:in
         _type_: _description_
     """
     # Load and clean features
-    loaded_feature_gdfs = load_all_feature_files(FEATURE_METADATA, ROOT_PATH, silent=silent)
+    loaded_feature_gdfs = load_all_feature_files(FEATURE_METADATA, OPENNYC_PATH, silent=silent)
     cleaned_feature_gdfs = clean_all_feature_files(loaded_feature_gdfs, FEATURE_METADATA, silent=silent)
     
     # Project features 
@@ -166,7 +159,7 @@ def count_features_for_locations(locations_gdf:gpd.GeoDataFrame, buffer_width:in
     return summarized_gdf
 
 # Load and Clean
-def load_and_clean_feature_data(feature_metadata:Dict=FEATURE_METADATA, root_path:Path=ROOT_PATH, silent:bool=False, proj_crs:str='2263'):
+def load_and_clean_feature_data(feature_metadata:Dict=FEATURE_METADATA, root_path:Path=OPENNYC_PATH, silent:bool=False, proj_crs:str='2263'):
     # Load and clean features
     loaded_feature_gdfs = load_all_feature_files(feature_metadata, root_path, silent=silent)
     cleaned_feature_gdfs = clean_all_feature_files(loaded_feature_gdfs, FEATURE_METADATA, silent=silent)
@@ -292,7 +285,7 @@ if __name__ == '__main__':
     #         years=YEARS
     #     )
 
-    features_dict = load_and_clean_feature_data(FEATURE_METADATA, ROOT_PATH)
+    features_dict = load_and_clean_feature_data(FEATURE_METADATA, OPENNYC_PATH)
     dicts = {}
     for year in YEARS:
         FEATURES = ['traffic_calming']

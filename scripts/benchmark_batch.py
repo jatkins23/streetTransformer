@@ -10,27 +10,18 @@ from dotenv import load_dotenv
 load_dotenv()
 os.getenv('GEMINI_API_KEY')
 
-# Set Local environment
-project_path = Path(__file__).resolve().parent.parent
-#project_path = Path(os.getcwd()).resolve().parent
-#project_path = Path('..').resolve()
-print(f'Treating "{project_path}" as `project_path`')
-sys.path.append(str(project_path))
-
 # Local imports
-from src.streetTransformer.locations.location import Location # This creates a Location object that holds and converts all of the data for each location
-from src.streetTransformer.llms.run_gemini_model import run_individual_model # Runs a gemini model 
-import src.streetTransformer.llms.models.imagery_describers.gemini_imagery_describers as gemini_imagery_describers
-from src.streetTransformer.comparison.compare import get_image_compare_data, get_compare_data_for_location_id_years, show_images_side_by_side
+from streettransformer.config.constants import DATA_PATH, TRAFFIC_CALMING_TEST_LOCATION_IDS, UNIVERSES_PATH, UNIVERSE_NAME
 
-traffic_calming_location_ids = [7571, 8887, 11738, 11800, 12116, 14271, 15283, 15375, 15709, 15852]
+from streettransformer.locations.location import Location # This creates a Location object that holds and converts all of the data for each location
+from streettransformer.llms.run_gemini_model import run_individual_model # Runs a gemini model 
+import streettransformer.llms.models.imagery_describers.gemini_imagery_describers as gemini_imagery_describers
+from streettransformer.comparison.compare import get_image_compare_data, get_compare_data_for_location_id_years, show_images_side_by_side
 
 UNIVERSE_NAME = 'caprecon_plus_control'
-universe_path = Path('..') / project_path / 'src/streetTransformer/data/universes/' / UNIVERSE_NAME
-print(os.listdir(Path('..') / project_path / 'src/streetTransformer/'))
-YEARS = list(range(2006, 2025, 2))
-YEARS = list(range(2016, 2025, 2))
-OUTFILE = project_path / 'src/streetTransformer/data/results/' / UNIVERSE_NAME / 'image_describer_trial1_normal.txt'
+universe_path = UNIVERSES_PATH / UNIVERSE_NAME
+
+OUTFILE = DATA_PATH / 'results/' / UNIVERSE_NAME / 'image_describer_trial1_normal.txt'
 #MODEL_NAME = 'gemini-2.5-flash-lite'
 MODEL_NAME = 'gemini-2.5-flash'
 
@@ -41,7 +32,7 @@ locations_gdf = locations_gdf.to_crs('4326')
 locations_gdf = locations_gdf # For subsetting if necessary
 
 # 2) Create Location Df
-locations_gdf = locations_gdf[locations_gdf['location_id'].isin(traffic_calming_location_ids)]
+locations_gdf = locations_gdf[locations_gdf['location_id'].isin(TRAFFIC_CALMING_TEST_LOCATION_IDS)]
 total_locations = locations_gdf.shape[0]
 
 
@@ -58,11 +49,11 @@ year_pairs = permute_years(YEARS)
 
 # Get comparison 
 results = []
-total_compares = len(traffic_calming_location_ids) * len(year_pairs)
+total_compares = len(TRAFFIC_CALMING_TEST_LOCATION_IDS) * len(year_pairs)
 
 gemini_client = genai.Client=genai.Client()
 
-for l_id in tqdm.tqdm(traffic_calming_location_ids, total=len(traffic_calming_location_ids)):
+for l_id in tqdm.tqdm(TRAFFIC_CALMING_TEST_LOCATION_IDS, total=len(TRAFFIC_CALMING_TEST_LOCATION_IDS)):
     for start_year, end_year in tqdm.tqdm(year_pairs, total=len(year_pairs), desc='location_id={l_id}'):
         output = {
                 'location_id'   : l_id,
