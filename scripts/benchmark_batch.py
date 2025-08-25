@@ -11,17 +11,17 @@ load_dotenv()
 os.getenv('GEMINI_API_KEY')
 
 # Local imports
-from streettransformer.config.constants import DATA_PATH, TRAFFIC_CALMING_TEST_LOCATION_IDS, UNIVERSES_PATH, UNIVERSE_NAME
+from streettransformer.config.constants import DATA_PATH, UNIVERSES_PATH, YEARS
 
 from streettransformer.locations.location import Location # This creates a Location object that holds and converts all of the data for each location
 from streettransformer.llms.run_gemini_model import run_individual_model # Runs a gemini model 
 import streettransformer.llms.models.imagery_describers.gemini_imagery_describers as gemini_imagery_describers
 from streettransformer.comparison.compare import get_image_compare_data, get_compare_data_for_location_id_years, show_images_side_by_side
 
-UNIVERSE_NAME = 'caprecon_plus_control'
+UNIVERSE_NAME = 'caprecon_plus_control_downsampled'
 universe_path = UNIVERSES_PATH / UNIVERSE_NAME
 
-OUTFILE = DATA_PATH / 'results/' / UNIVERSE_NAME / 'image_describer_trial1_normal.txt'
+OUTFILE = DATA_PATH / 'runtime' / 'results' / UNIVERSE_NAME / 'image_describer_trial2_normal.txt'
 #MODEL_NAME = 'gemini-2.5-flash-lite'
 MODEL_NAME = 'gemini-2.5-flash'
 
@@ -31,10 +31,7 @@ locations_gdf = gpd.read_feather(universe_path / 'locations.feather')
 locations_gdf = locations_gdf.to_crs('4326')
 locations_gdf = locations_gdf # For subsetting if necessary
 
-# 2) Create Location Df
-locations_gdf = locations_gdf[locations_gdf['location_id'].isin(TRAFFIC_CALMING_TEST_LOCATION_IDS)]
 total_locations = locations_gdf.shape[0]
-
 
 def permute_years(years):
     # create all permutations of comparison years 
@@ -45,16 +42,18 @@ def permute_years(years):
                 permutations.append((y1, y2))
     return permutations
     
+#year_pairs = permute_years(YEARS)
+YEARS = [2016, 2024, 2018, 2022, 2020]
 year_pairs = permute_years(YEARS)
 
 # Get comparison 
 results = []
-total_compares = len(TRAFFIC_CALMING_TEST_LOCATION_IDS) * len(year_pairs)
+total_compares = locations_gdf.shape[0] * len(year_pairs)
 
 gemini_client = genai.Client=genai.Client()
 
-for l_id in tqdm.tqdm(TRAFFIC_CALMING_TEST_LOCATION_IDS, total=len(TRAFFIC_CALMING_TEST_LOCATION_IDS)):
-    for start_year, end_year in tqdm.tqdm(year_pairs, total=len(year_pairs), desc='location_id={l_id}'):
+for start_year, end_year in tqdm.tqdm(year_pairs, total=len(year_pairs)):
+    for l_id in tqdm.tqdm(locations_gdf['location_id'], total=locations_gdf.shape[0], desc=f'{start_year} -> {end_year}'):
         output = {
                 'location_id'   : l_id,
                 'start_year'    : start_year,

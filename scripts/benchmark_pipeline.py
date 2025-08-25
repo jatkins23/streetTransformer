@@ -11,6 +11,7 @@ import geopandas as gpd
 import tqdm
 
 # Local imports
+
 from streettransformer.config.constants import UNIVERSES_PATH, TRAFFIC_CALMING_TEST_LOCATION_IDS, YEARS
 from streettransformer.locations.location import Location # This creates a Location object that holds and converts all of the data for each location
 from streettransformer.llms.run_gemini_model import run_individual_model # Runs a gemini model 
@@ -51,7 +52,7 @@ if __name__ == '__main__':
     total_locations = locations_gdf.shape[0]
 
     # Get comparison 
-    compare = get_image_compare_data(locations_gdf, location_id=args.location_id, start_year=args.start_year, end_year=args.end_year, universe='caprecon_plus_control')
+    compare = get_image_compare_data(locations_gdf, location_id=args.location_id, start_year=args.start_year, end_year=args.end_year, universe_name='caprecon_plus_control')
 
     response = run_individual_model(gemini_imagery_describers.step1_instructions, files=compare)
     if args.display:

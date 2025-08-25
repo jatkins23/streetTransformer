@@ -15,7 +15,7 @@ load_dotenv()
 
 DATA_PATH = Path(str(os.getenv('DATA_PATH')))
 
-LION_PATH = 'data/lion/lion.gdb'
+LION_PATH = 'raw/locations/lion/lion.gdb'
 
 LION_LAYERS = {'nodes': 'node', 'node_names': 'node_stname', 'altnames': 'altnames','master': 'lion'}
 
@@ -31,6 +31,7 @@ def _load_lion_baselayers(root_path, lion_path, layers:Dict[str, str]|str='all')
         try:
             layers_dict[lyr_name] = gpd.read_file(root_path / LION_PATH, layer=lyr_path)
         except Exception as e:
+            print(Exception)
             raise ValueError(f'{lyr_path} not found! Only {", ".join(list(LION_LAYERS.values()))} exist as layers. {e}') # TODO: auto-generate this.
         
     # TODO: add counts or some sort of dimensional summary
@@ -110,10 +111,9 @@ def load_lion_universe(nodes_gdf:gpd.GeoDataFrame, node_names_gdf:gpd.GeoDataFra
 
 def load_lion_default(universe='all', outfile=None): # TODO: this should take in a unvierse_name, check if it exists in data/universes, if not, geocode it and create a new one. Also should be named better and refactored to reflect this. Maybe should be generalized to allow for different sources
     # Load file paths
-    root_path = Path(__file__).resolve().parent.parent.parent
 
     # Load base layers
-    layers = _load_lion_baselayers(root_path, LION_PATH, {'nodes': 'node','node_names': 'node_stname'})
+    layers = _load_lion_baselayers(DATA_PATH, LION_PATH, {'nodes': 'node','node_names': 'node_stname'})
 
     # Filter and munge to the right format
     result = load_lion_universe(layers['nodes'], layers['node_names'], universe, outfile)

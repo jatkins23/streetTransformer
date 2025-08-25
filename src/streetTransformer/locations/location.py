@@ -3,10 +3,10 @@ from typing import Optional, List, Dict, Tuple
 from pathlib import Path
 import os, sys
 import json
+from dataclasses import dataclass, asdict
 
 import geopandas as gpd
 import pandas as pd
-from pydantic import BaseModel
 
 from ..config.constants import UNIVERSES_PATH, YEARS
 
@@ -29,6 +29,7 @@ def _read_filtered_json(path:Path, location_id):
 from shapely.geometry import Point
 from .location_geometry import LocationGeometry
 
+@dataclass
 class Location: 
     def __init__(self, 
                  location_id:int, 
@@ -37,10 +38,11 @@ class Location:
                  centroid:Point, 
                  years:List[int|str]=YEARS, 
                  universe_path:Optional[Path]=None):
-        self.location_id:int = location_id
-        self.universe_name:str = universe_name
+        self.centroid:Point         = centroid       
+        self.location_id:int        = location_id
+        self.universe_name:str      = universe_name
         self.crossstreets:List[str] = crossstreets
-        self.years:List[str] = [str(y) for y in years]
+        self.years:List[str]        = [str(y) for y in years]
 
         # Universe Path
         abs_universe_path = universe_path or _generate_universe_path(self.universe_name, UNIVERSES_PATH)
@@ -48,7 +50,7 @@ class Location:
         self.universe_path = abs_universe_path
     
         # Geometry - ensure centroid is 4326 somehow
-        self.geometry = LocationGeometry(centroid=(centroid.x, centroid.y))
+        self.geometry = LocationGeometry(location_id=location_id, centroid=(centroid.x, centroid.y))
         
         # Load Imagery
         self.imagery_paths:Dict[str, Optional[Path]] = self.load_imagery(self.years)
@@ -167,19 +169,37 @@ class Location:
         except Exception as e:
             print(e)
     
-    # Output functions
+    # Serialization
     def to_dict(self) -> dict:
         # imagery_paths: Dict[str, Optional[Path]] -> Dict[str, Optional[str]]
-        img = {k: (None if v is None else str(v)) for k, v in self.imagery_paths.items()}
+        imgs = {k: (None if v is None else str(v)) for k, v in self.imagery_paths.items()}
         return {
             "location_id": self.location_id,
             "universe_name": self.universe_name,
             "crossstreets": self.crossstreets,         # list[str]
             # "years": self.years,                       # list[str]
             "universe_path": str(self.universe_path),  # str
-            "imagery_paths": img,                     # dict[str, str|None]
+            "imagery_paths": imgs,                     # dict[str, str|None]
             "geometry_json": self.geometry.model_dump_json(),  # str
             "project_docs": self.documents[['project_id', 'year','name', 'relative_paths']].to_json()
+        }
+    
+    # Serialization
+    def to_db(self) -> dict:
+        # imagery_paths: Dict[str, Optional[Path]] -> Dict[str, Optional[str]]
+        imgs = {k: (None if v is None else str(v)) for k, v in self.imagery_paths.items()}
+        return {
+            "location_id"   : self.location_id,
+            "universe_name" : self.universe_name,
+            "crossstreets"  : self.crossstreets,         # list[str]
+            "universe_path" : str(self.universe_path),  # str
+            "imagery_paths" : imgs,                     # dict[str, str|None]
+            "geometry"      : self.centroid,
+            #"geometry_id"   : 0,
+            #"geometry_obj"  : self.geometry.model_dump_json(),  # str
+            "project_docs"  : self.documents[['project_id', 'year','name', 'relative_paths']].to_json(),
+            'features'      : self.citydata_features,
+            'features_summary': self.citydata_features_summary
         }
     
     # Manipulation
@@ -228,9 +248,23 @@ class Location:
         
         return compare_data
         
+# from geoalchemy2 import Geometry
+# from sqlalchemy import Column, Integer, String, ARRAY, JSON, create_engine
+# #from sqlalchemy.ext.declarative import declarative_base
+# from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
+# Base = declarative_base()
 
-    
+# class LocationDB(Base):
+#     __tablename__ = 'locations'
 
-
-
+#     id = Column(Integer, primary_key = True)
+#     location_id     = Column(Integer, primary_key=True)
+#     universe_name   = Column(String)
+#     crossstreets    = Column(ARRAY(String))
+#     universe_path   = Column(String)
+#     imagery_paths   = Column(JSON)
+#     centroid        = Column(Geometry())
+#     geometry_id     = Column(Integer)
+#     geometry_obj    = Column(JSON)
+#     project_docs    = Column(JSON)

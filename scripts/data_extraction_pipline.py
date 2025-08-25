@@ -12,7 +12,7 @@ import argparse
 
 
 #from preprocessing.data_load.load_intersections import load_location
-import preprocessing.imagery.join_and_stitch as jas
+import st_preprocessing.imagery.join_and_stitch as jas
 
 load_dotenv(override=True)
 DATA_PATH_STEM = Path(str(os.getenv('DATA_PATH')))
