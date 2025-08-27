@@ -11,5 +11,5 @@ DOCUMENTS_PATH = DATA_PATH / 'raw' / 'documents'
 UNIVERSES_PATH = DATA_PATH / 'runtime' / 'universes'
 
 # Env Variables
-YEARS = list(range(2006, 2025))
+YEARS = list(range(2006, 2025, 2))
 YEARS_str = [str(y) for y in YEARS]

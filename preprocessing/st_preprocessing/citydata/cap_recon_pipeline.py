@@ -1,3 +1,4 @@
+# Run this
 import os, sys
 from pathlib import Path
 from dotenv import load_dotenv
@@ -82,11 +83,10 @@ if __name__ == '__main__':
 
     parser.add_argument('universe', type=str, help="Specify universe. Either a saved one or a place to geocode. e.g.: 'nyc' or 'Downtown Brooklyn, New York, USA'")
     parser.add_argument('-o','--outfile', type=Path, help="Path to the output file")
-    parser.add_argument('-b','--buffer-width', type=int, help="Buffer width for nearby projects")
+    parser.add_argument('-b','--buffer-width', type=int, help="Buffer width for nearby projects", default=100)
     parser.add_argument('-s','--silent', default=False, help="Run in silent mode (minimize console output)")
 
     args = parser.parse_args()
-
 
     # Load locations for the given unverse
     #nodes, _ = load_location(universe) # TODO: add `silent` 

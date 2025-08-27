@@ -42,7 +42,8 @@ if __name__ == '__main__':
     universe_path = UNIVERSES_PATH / universe_name
 
     # 1) Load all locations from the project database
-    locations_gdf = gpd.read_feather(universe_path / 'locations.feather')
+    #locations_gdf = gpd.read_feather(universe_path / 'locations.feather')
+    locations_gdf = gpd.read_parquet(universe_path / 'locations/locations_raw.parquet')
     locations_gdf = locations_gdf.to_crs('4326')
     locations_gdf = locations_gdf # For subsetting if necessary
 
@@ -52,7 +53,8 @@ if __name__ == '__main__':
     total_locations = locations_gdf.shape[0]
 
     # Get comparison 
-    compare = get_image_compare_data(locations_gdf, location_id=args.location_id, start_year=args.start_year, end_year=args.end_year, universe_name='caprecon_plus_control')
+
+    compare = get_image_compare_data(locations_gdf, location_id=args.location_id, start_year=args.start_year, end_year=args.end_year, universe_name=universe_name)
 
     response = run_individual_model(gemini_imagery_describers.step1_instructions, files=compare)
     if args.display:

@@ -9,8 +9,9 @@ import numpy as np
 import math
 import ast
 import json
+from argparse import ArgumentParser
 
-from ..config import UNIVERSES_PATH, DATA_PATH
+from streettransformer.config.constants import UNIVERSES_PATH, DATA_PATH
 
 
 # Set up local test environment
@@ -229,20 +230,24 @@ def pipeline(
     cleaned_gdf = documents_gdf.drop(['document_links','source_url'], axis=1)
     # Write to 
     if out_path:
-        cleaned_gdf.drop(['absolute_paths'], axis=1).to_feather(out_path)
+        cleaned_gdf.drop(['absolute_paths'], axis=1).to_parquet(out_path)
 
     return cleaned_gdf
 
 if __name__ == '__main__':
-    UNIVERSE_NAME = 'caprecon_plus_control'
-    universe_path = UNIVERSES_PATH / UNIVERSE_NAME
+    parser = ArgumentParser()
+    parser.add_argument('universe_name', type=str)
+
+    args = parser.parse_args()
+
+    universe_path = UNIVERSES_PATH / args.universe_name
 
     cleaned_gdf = pipeline(
         docs_geocoded_path  = DOCS_GEOCODED_FILE, 
         documents_path      = DOCUMENTS_PATH,
-        out_path            = universe_path / 'documents.feather'
+        out_path            = universe_path / f'documents.parquet'
     )
 
     # #print(cleaned_gdf.loc[1]['geometry'])
-    print(cleaned_gdf[['relative_paths', 'absolute_paths']].dtypes)
+    print(cleaned_gdf[['relative_paths', 'absolute_paths']])
 

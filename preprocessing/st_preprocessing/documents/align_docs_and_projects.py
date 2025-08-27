@@ -2,6 +2,7 @@
 
 #import os
 from pathlib import Path
+import sys
 #from typing  import List
 
 import json
@@ -11,24 +12,6 @@ import geopandas as gpd
 
 from ..config import DATA_PATH, UNIVERSES_PATH, DOCUMENTS_PATH
 
-# Universe
-UNIVERSE_NAME = 'caprecon3'
-UNIVERSE_PATH = UNIVERSES_PATH / UNIVERSE_NAME
-
-# Documents
-documents_df = pd.read_csv(DOCUMENTS_PATH / 'projects_df.csv', index_col=0, na_values='.')
-
-# Imagery
-IMAGERY_PATH = UNIVERSE_PATH / 'imagery/'
-
-# Locations
-LOCATIONS_PATH = UNIVERSE_PATH / 'locations.feather'
-
-locations_gdf = gpd.read_feather(LOCATIONS_PATH)
-DOCUMENTS_PROCESSED_PATH = DATA_PATH / 'processing/documents/raw_to_gemini_crossstreets'
-documents_ndjson = DOCUMENTS_PROCESSED_PATH / 'gemini_output.ndjson'
-
-## Pipeline
 
 # This is the real pipeline
 def _load_json_safe(x):
@@ -39,8 +22,7 @@ def _load_json_safe(x):
         return ''
 
 
-def load_documents_geocoded(ndjson_path=documents_ndjson):
-    print(ndjson_path)
+def load_documents_geocoded(ndjson_path:Path):
     return pd.read_json(ndjson_path, lines=True)#.set_index('id')
 
 def _swap_latlng(input_gdf:gpd.GeoDataFrame) -> gpd.GeoDataFrame: 
@@ -137,5 +119,23 @@ def pipeline(documents_ndjson_path):
     
 
 if __name__ == '__main__':
-    print(pipeline(DOCUMENTS_PROCESSED_PATH / 'gemini_output.ndjson'))
+    universe_name = sys.argv[1]
+        # Universe
+    universe_path = UNIVERSES_PATH / universe_name
+
+    # Documents
+    #documents_df = pd.read_csv(DOCUMENTS_PATH / 'projects_df.csv', index_col=0, na_values='.')
+    documents_df = gpd.read_parquet(DOCUMENTS_PATH)
+
+    # Imagery
+    imagery_path = universe_path / 'imagery/'
+
+    # Locations
+    locations_path = universe_path / 'locations' / 'locations_raw.parquet'
+
+    locations_gdf = gpd.read_parquet(locations_path)
+    documents_processed_path = DATA_PATH / 'processing/documents/raw_to_gemini_crossstreets'
+    documents_ndjson = documents_processed_path / 'gemini_output.ndjson'
+
+    print(pipeline(documents_processed_path / 'gemini_output.ndjson'))
     # print(pipeline(DOCUMENTS_PROCESSED_PATH / 'gemini_output2.ndjson'))

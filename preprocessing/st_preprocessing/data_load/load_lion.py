@@ -117,6 +117,7 @@ def load_lion_default(universe='all', outfile=None): # TODO: this should take in
 
     # Filter and munge to the right format
     result = load_lion_universe(layers['nodes'], layers['node_names'], universe, outfile)
+    result.rename({'NODEID': 'location_id'}, axis=1)
     return result
 
 if __name__ == '__main__':

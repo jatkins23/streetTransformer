@@ -108,7 +108,7 @@ class Location:
     
     def load_documents(self, years:List[str]=YEARS, documents_gdf_path:Optional[Path]=None) -> gpd.GeoDataFrame|None:
         if documents_gdf_path is None:
-            documents_gdf_path = self.universe_path / 'documents.feather'
+            documents_gdf_path = self.universe_path / 'documents.parquet'
         
         if not documents_gdf_path.exists():
             raise Warning(f'"{documents_gdf_path}" not found!')
@@ -116,7 +116,7 @@ class Location:
         else:
             # load the geocoded documents
             #documents_gdf = gpd.read_file(documents_gdf_path)
-            documents_gdf = gpd.read_feather(documents_gdf_path)
+            documents_gdf = gpd.read_parquet(documents_gdf_path)
 
             # Create buffer
             # bbox_p = Point(self.geometry.centroid_p).buffer(1000)
@@ -141,7 +141,7 @@ class Location:
             fts_files = os.listdir(fts_year_path)
             
             for file in fts_files:
-                features_file = gpd.read_feather(fts_year_path / file)
+                features_file = gpd.read_parquet(fts_year_path / file)
                 features_file_in_location = features_file[features_file['location_id'] == self.location_id]
                 features[year][Path(file).stem] = features_file_in_location
 

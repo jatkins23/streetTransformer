@@ -2,15 +2,15 @@ from __future__ import annotations
 from pathlib import Path
 from google import genai
 from google.genai import types
-from typing import List, Optional, Any, Union, Dict
-import random
+
 import time
+import random
+import threading
+from collections import deque
+from typing import List, Optional, Any, Union, Dict, Tuple
 import json
 import concurrent.futures as cf
 
-
-# project_path = Path(__file__).resolve().parent.parent.parent.parent
-# print(f'Treating "{project_path}" as `project_path`')
 FLUSH_EVERY = 10
 
 import os
@@ -20,7 +20,7 @@ load_dotenv()
 os.getenv('GEMINI_API_KEY')
 
 # Configure generation the Gem is set up
-def setup_config(sys_prompt:str, temp:float=.9, top_p:float=.2, response_mime_type:str='application/json'):
+def setup_config(sys_prompt:str, temp:float=.9, top_p:float=.2, response_mime_type:str='application/json') -> types.GenerateContentConfig:
     config = types.GenerateContentConfig(
         system_instruction=sys_prompt,
         temperature=temp,
@@ -40,6 +40,32 @@ def setup_contents(files:List[Path], client, user_prompt:str='Documents: '):
 
     return contents
 
+def upload_imgs(img_paths:Dict[str, Path], base_path:Optional[Path]=None, client:genai.Client=genai.Client()) -> Dict[str, types.File]:
+    if base_path:
+        img_full_paths = {k: base_path / p for k, p in img_paths.items()}
+    else:
+        img_full_paths = img_paths
+    return {k: client.files.upload(file=p) for k, p in img_full_paths.items()}
+
+
+# 
+def setup_contents_imagecompare_json(start_img_uri:str, end_img_uri:str, user_prompt:str='Here are the images. Image A is BEFORE, B is AFTER: ') -> types.ContentListUnionDict:
+    if start_img_uri and end_img_uri:
+        contents = [{
+            'role': 'user',
+            'parts': [
+                {'text': user_prompt},
+                {'text': 'image A (before):'},
+                {"file_data": {"file_uri": start_img_uri, "mime_type": "image/png"}},
+                {'text': 'image B (before):'},
+                {"file_data": {"file_uri": end_img_uri, "mime_type": "image/png"}}
+            ]
+        }]
+        return contents
+    else:
+        raise Warning('Unable to upload image')
+
+
 def response_to_text(resp: Any) -> str:
     """Extract text robustly whether run_individual_model returns an object or a string."""
     if resp is None:
@@ -52,112 +78,6 @@ def response_to_text(resp: Any) -> str:
             val = getattr(resp, attr)
             return val if isinstance(val, str) else str(val)
     return str(resp)
-
-# Helper: decide if an exception is retryable (rate limit or transient)
-def _is_retryable(err: Exception) -> bool:
-    # Try to read structured fields if present
-    status = getattr(err, "status", None) or getattr(err, "code", None)
-    http_status = getattr(err, "http_status", None)
-
-    # Common signals
-    text = str(err).lower()
-
-    if http_status in (408, 429, 500, 502, 503, 504):
-        return True
-    if status in ("RESOURCE_EXHAUSTED", "UNAVAILABLE", "ABORTED", "DEADLINE_EXCEEDED"):
-        return True
-    # Fallback string checks
-    if "rate limit" in text or "quota" in text or "resource exhausted" in text:
-        return True
-    if "temporarily unavailable" in text or "retry" in text:
-        return True
-    return False
-
-# def run_individual_model(
-#     system_prompt: str,
-#     files: List[Path],
-#     model_name: str = "gemini-2.5-flash",
-#     client: genai.Client = genai.Client(),
-#     outfile: Optional[Path] = None,
-#     *,
-#     # throttling + backoff controls
-#     per_request_delay: float = 0.5,   # fixed sleep before each call
-#     max_retries: int = 6,             # total attempts = 1 + retries
-#     initial_backoff: float = 1.0,     # seconds
-#     max_backoff: float = 30.0,        # cap
-#     jitter: bool = True,              # add randomization to backoff
-# ):
-#     """
-#     Calls Gemini with a small pre-call delay and exponential backoff
-#     for rate limits/transient errors. Returns the response text.
-#     """
-#     config = setup_config(system_prompt)
-#     contents = setup_contents(files=files, client=client)
-
-#     # Optional: small fixed delay to stay under QPS limits when called in a loop
-#     if per_request_delay > 0:
-#         time.sleep(per_request_delay)
-
-#     attempt = 0
-#     backoff = initial_backoff
-
-#     while True:
-#         try:
-#             response = client.models.generate_content(
-#                 model=model_name,
-#                 contents=contents,
-#                 config=config,
-#             )
-
-#             text = response_to_text(response)
-
-#             if outfile:
-#                 outfile.parent.mkdir(parents=True, exist_ok=True)
-#                 with outfile.open("w+", encoding="utf-8") as f:
-#                     f.write(text)
-
-#             return text
-
-#         except Exception as e:
-#             attempt += 1
-#             if attempt > max_retries or not _is_retryable(e):
-#                 # Non-retryable or out of retries: re-raise
-#                 raise
-
-#             # Exponential backoff with optional jitter
-#             sleep_s = backoff
-#             if jitter:
-#                 # full jitter
-#                 sleep_s = random.uniform(0, backoff)
-
-#             time.sleep(sleep_s)
-#             backoff = min(backoff * 2, max_backoff)
-
-# def run_individual_model(system_prompt:str, files:List[Path], model_name:str='gemini-2.5-flash', client:genai.Client=genai.Client(), outfile:Optional[Path]=None):
-#     config = setup_config(system_prompt)
-#     contents = setup_contents(files=files, client=client)
-
-#     # geocode
-#     response = client.models.generate_content(
-#         model=model_name, 
-#         contents=contents,
-#         config=config,
-#     )
-
-#     if outfile:
-#         outfile.parent.mkdir(parents=True, exist_ok=True)
-#         with outfile.open('w+', encoding='utf-8') as f:
-#             f.write(response_to_text(response))
-
-#     return response_to_text(response)
-
-import time
-import random
-import threading
-from collections import deque
-from pathlib import Path
-from typing import List, Optional
-import google.genai as genai  # your existing import
 
 # ---- Simple thread-safe RPM limiter ----
 class RateLimiter:
@@ -206,7 +126,7 @@ def _is_retryable(err: Exception) -> bool:
 
 def run_individual_model(
     system_prompt: str,
-    files: List[Path],
+    files: Dict[str, Path],
     model_name: str = "gemini-2.5-flash",
     client: genai.Client = genai.Client(),
     outfile: Optional[Path] = None,
@@ -297,3 +217,33 @@ def run_many_inputs(
         results[alias] = resp
 
     return results
+
+
+
+# Prepare for batch mode
+# def upload(path, mime="image/png", client:Optional[genai.Client]=None):
+#     if client is None:
+#         client=genai.Client()
+#     return client.files.upload(file=path, config=types.UploadFileConfig(mime_type=mime))
+
+# generate_request = {
+#     'key': key
+# }
+
+
+
+
+# request_key = f'r-{location_id}-{year_id}'
+# def write_batch_input(location_id:int, year_id:str, images:Dict[str, Path], additional_files:Dict, config:Dict, contents:Dict):
+#     request_key = f'r-{location_id}-{year_id}'
+#     request_key = f'r-{location_id}-{images[]}'
+
+
+
+
+# def prepare_batch_inputs(
+#         inputs:Dict[int, Dict[str, Path]],
+#         outfile:Path|str,
+        
+# ):
+#     upload_imgs(location)

@@ -20,7 +20,7 @@ from .features.summarize import count_features_by_location
 #from preprocessing.data_load.load_intersections import load_location
 from .geoprocessing import buffer_locations
 from ..data_load.load_lion import load_lion_default
-from ..config import YEARS, OPENNYC_PATH,  UNIVERSES_PATH
+from ..config import YEARS, OPENNYC_PATH, UNIVERSES_PATH
 
 from streettransformer.locations.location_geometry import LocationGeometry
 from streettransformer.locations.location import Location
@@ -41,8 +41,6 @@ FEATURE_METADATA = {
                         'load_method': 'standard', 'clean_method': clean_traffic_calming, 
                         'shorthand': 'calm', 'date_col': 'installdate'}
 }
-
-UNIVERSES_PATH = Path('src/streetTransformer/data/universes')
 
 # TODO the `[load|clean|summarize]_all_files` functions are extemely duplicative and can be 
 def load_all_feature_files(feat_metadata:Dict[str, Dict]=FEATURE_METADATA, root_data_path:Path=OPENNYC_PATH, silent:bool=False) -> Dict[str, gpd.GeoDataFrame]:
@@ -263,38 +261,35 @@ if __name__ == '__main__':
     # Parse args
     parser = argparse.ArgumentParser(description='Collect Project Features from City Data Files')
 
-    parser.add_argument('universe', type=str, help="Specify universe. Either a saved one or a place to geocode. e.g.: 'nyc' or 'Downtown Brooklyn, New York, USA'")
-    parser.add_argument('-o','--outfile', type=Path, help="Path to the output file")
+    parser.add_argument('universe_name', type=str, help="Specify universe. Either a saved one or a place to geocode. e.g.: 'nyc' or 'Downtown Brooklyn, New York, USA'")
+    #parser.add_argument('-o','--outfile', type=Path, help="Path to the output file")
     parser.add_argument('-s','--silent', default=False, help="Run in silent mode (minimize console output)")
     parser.add_argument('-f','--force-new-locations', default=False, help="Re-pull the universe")
 
     args = parser.parse_args()
 
     # Load the locations.gdf
-    locations_gdf = load_locations(args.universe, universes_path=UNIVERSES_PATH, source='lion', force_new_locations=args.force_new_locations)
+    locations_path = UNIVERSES_PATH / args.universe_name / 'locations' / 'locations_raw.parquet'
+    if locations_path.exists():
+        locations_gdf = gpd.read_parquet(locations_path)
+    else:
+        locations_gdf = load_locations(args.universe_name, universes_path=UNIVERSES_PATH, source='lion', force_new_locations=args.force_new_locations)
+    
 
-    locations_gdf_p = locations_gdf.to_crs('4326').head(10)
+    locations_gdf_p = locations_gdf.to_crs('4326')
     # Turn them into "Locations" TODO: in future, store them as Locations
     total_locations = locations_gdf_p.shape[0]
-    # for row in tqdm. tqdm(locations_gdf_p.itertuples(), total=total_locations):
-    #     temp_location = Location(
-    #         location_id=row.location_id,
-    #         universe_name=args.universe,
-    #         crossstreets=row.crossstreets,
-    #         centroid=row.geometry,
-    #         years=YEARS
-    #     )
 
     features_dict = load_and_clean_feature_data(FEATURE_METADATA, OPENNYC_PATH)
+    
     dicts = {}
     for year in YEARS:
         FEATURES = ['traffic_calming']
         ts_feat_data = timeshift_feature_data(features_dict, f'{year}-01-01', features=FEATURES)
         for feat in FEATURES:
             joined = compare_locations_to_features(locations_gdf, ts_feat_data[feat])
-            out_path = UNIVERSES_PATH / 'caprecon_plus_control' / 'features' / str(year) / f'{feat}.feather'
+            out_path = UNIVERSES_PATH / args.universe_name / 'features' / str(year) / f'{feat}.parquet'
             out_path.parent.mkdir(parents=True, exist_ok=True)
-            joined.to_feather(out_path)
-
+            joined.to_parquet(out_path)
     
 
