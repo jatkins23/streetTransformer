@@ -116,8 +116,8 @@ def _generate_offset_grid(radius:int) -> List[Tuple[int, int]]:
 
     offsets = [
         (dx, dy)
-        for dy in range(-radius, radius + 1)
-        for dx in range(-radius, radius + 1)
+        for dy in range(-(2*radius), (2*radius) + 1)
+        for dx in range(-(2*radius), (2*radius) + 1)
     ]
     return offsets
 
