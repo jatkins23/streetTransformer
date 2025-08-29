@@ -271,7 +271,7 @@ def setup_logging(quiet: bool) -> None:
     )
 
 EXPORT_COLUMNS = ['location_id', 'year', 'universe', 'path', 'file_name', 'uri', 'mime_type','create_time','expiration_time'] 
-def read_image_paths_df(path_ndjson:Path|str, base_path:Path|str=Path('.'), outfile:Optional[Path|str]=None):
+def read_image_paths_df(path_ndjson:Path|str, base_path:Path|str=Path('.'), outfile:Optional[Path|str]=None): # TODO: Instead of this two step process, it should either save things in this format to begin with or 
     path_ndjson = Path(path_ndjson)
     base_path = Path(base_path)
     outfile = Path(outfile) if outfile else None

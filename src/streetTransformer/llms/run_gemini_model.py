@@ -247,3 +247,4 @@ def run_many_inputs(
         
 # ):
 #     upload_imgs(location)
+
