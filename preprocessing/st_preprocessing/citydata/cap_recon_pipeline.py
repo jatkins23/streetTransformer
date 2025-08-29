@@ -43,36 +43,48 @@ def load_caprecon_file(universe:str='nyc', data_path=OPENNYC_DATA_PATH, source_f
 
 def gather_capital_projects_for_locations(locations_gdf:gpd.GeoDataFrame, outfile:Optional[Path|str]=None, buffer_width:int=100, silent:bool=False) -> gpd.GeoDataFrame:
     # Load and clean features
-    # loaded_gdfs = load_all_files(FEATURE_METADATA, ROOT_PATH, silent=silent)
-    # cleaned_gdfs = clean_all_files(loaded_gdfs, FEATURE_METADATA, silent=silent)
-    
-    # Project features 
-    # cleaned_gdfs = {k: v.set_crs('4326') for k, v in cleaned_gdfs.items()}
-    # cleaned_gdfs_p = {k: v.to_crs('2263') for k, v in cleaned_gdfs.items()}
     projects_gdf = load_caprecon_file(data_path=OPENNYC_DATA_PATH, source_file_name=CORE_FILE_NAME) # maybe set crs('4326')
-    projects_gdf_p = projects_gdf.to_crs('2263') # TODO: store crs in config somewhere
+    projects_gdf_p = projects_gdf.copy().to_crs('2263') # TODO: store crs in config somewhere
     
-    # Create buffers with width `buffer_width`
-    location_buffers = buffer_locations(locations_gdf, buffer_width=buffer_width)
+    locations_p = locations_gdf.copy().to_crs('2263')
+    
+    # Buffer
+    locations_buffer = locations_p.copy()
+    locations_buffer['point_geom'] = locations_p.geometry
+    locations_buffer = locations_buffer.set_geometry(locations_buffer.geometry.buffer(100))
+
+    hits = gpd.sjoin(locations_buffer, projects_gdf_p, how="inner", predicate="intersects") # gets all projects within 100 feet of location
+
+    joined = hits[['location_id', 'geometry', 'point_geom','index_right','ProjectID', 'ProjTitle']].merge(
+        projects_gdf_p[['geometry', 'ProjTitle']],
+        left_on = 'index_right', right_index=True,
+        suffixes = ['', '_project'],
+        how='inner', indicator=True # Basically all works. Only 1 is right_only, 0 left_only
+    )
+
+    distance_to_project = joined['point_geom'].distance(joined['geometry_project']) # pairwise distances
 
     # summarize
-    location_projects_gdf = location_buffers.sjoin(
-        projects_gdf_p,
-        how='inner'
-    ).rename(columns = {'index_right': 'project_id'})[
-        locations_gdf.columns.tolist() + 
-        ['project_id','ProjectID','ProjTitle','ProjectType', 'ProjectStatus', 'ConstructionFY',
+    location_projects_gdf = hits.rename(columns = {'index_right': 'city_project_id',})
+    hits['distance'] = distance_to_project
+    export_cols = locations_gdf.columns.tolist() + [
+        'ProjectID','city_project_id','ProjTitle','ProjectType', 'ProjectStatus', 'ConstructionFY',
          'DesignStartDate', 'ConstructionEndDate', 'CurrentFunding',
          'ProjectCost', 'OversallScope', 'SafetyScope', 'OtherScope',
-         'ProjectJustification', 'OnStreetName', 'FromStreetName']]
+         'ProjectJustification', 'OnStreetName', 'FromStreetName']
+    # Clean up a bit
+    
+    # location_projects_gdf['DesignStartDate'] = pd.to_datetime(location_projects_gdf['DesignStartDate'])
+    # location_projects_gdf['ConstructionEndDate'] = pd.to_datetime(location_projects_gdf['ConstructionEndDate'])
+
+    location_projects_gdf = location_projects_gdf[export_cols] 
     location_projects_gdf = location_projects_gdf.set_geometry('geometry') # TODO: Refactor this or just clean up
     
     # If outfile:
     if outfile:
-        location_projects_gdf.to_csv(outfile, index=True) # TODO: this shouldn't work
+        location_projects_gdf.to_parquet(outfile, index=True) # TODO: this shouldn't work
 
-    # So this is load, need to then do the summarize. sHERE HERE
-
+    # So this is load, need to then do the summarize.
     return location_projects_gdf
 
 if __name__ == '__main__':
