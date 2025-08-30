@@ -3,6 +3,7 @@ from pathlib import Path
 from google import genai
 from google.genai import types
 
+import tqdm
 import time
 import random
 import threading
@@ -32,11 +33,14 @@ def setup_config(sys_prompt:str, temp:float=.9, top_p:float=.2, response_mime_ty
 # Make a single-shot request (text-only or multimodal w/ file)
 def setup_contents(files:List[Path], client, user_prompt:str='Documents: '):
     contents = [user_prompt]
-    for pdf_file in files:
-        if pdf_file.exists(): 
-            uploaded = client.files.upload(file=pdf_file)
-            if uploaded:
-                contents.append(uploaded)
+    for input_item in files:
+        if isinstance(input_item, Path):
+            if input_item.exists(): 
+                uploaded = client.files.upload(file=input_item)
+                if uploaded:
+                    contents.append(uploaded)
+        else:
+            contents.append(input_item)
 
     return contents
 
@@ -126,7 +130,7 @@ def _is_retryable(err: Exception) -> bool:
 
 def run_individual_model(
     system_prompt: str,
-    files: Dict[str, Path],
+    files: Dict[str, Path|str],
     model_name: str = "gemini-2.5-flash",
     client: genai.Client = genai.Client(),
     outfile: Optional[Path] = None,
@@ -196,7 +200,7 @@ def run_many_inputs(
     """
     results: Dict[str, Any] = {}
 
-    for alias, entry in inputs.items():
+    for alias, entry in tqdm.tqdm(inputs.items(), total=len(inputs.items())):
         files = entry.get("files")
         if not files:
             raise ValueError(f"[{alias}] is missing 'files'")
