@@ -1,3 +1,6 @@
+# Note: This was largely superceded by notebooks/caprecon_projects which does this and also all the sampling for the NEURIPS sample
+# TODO: Align these and codify them.
+
 # Run this
 import os, sys
 from pathlib import Path

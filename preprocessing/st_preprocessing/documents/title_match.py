@@ -15,6 +15,16 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 def find_most_similar_titles(query_title:str, test_titles:pd.Series, top_n:Optional[int]=5) -> pd.DataFrame:
+    """Finds the most similar `top_n` titles to a given `query_title` in a list of `test_titles`. 
+
+    Args:
+        query_title (str): _description_
+        test_titles (pd.Series): _description_
+        top_n (Optional[int], optional): _description_. Defaults to 5.
+
+    Returns:
+        pd.DataFrame: _description_
+    """
                              #weights:Optional[np.ndarray]=None) -> pd.DataFrame:
     # if weights is None:
     #     weights = np.ones_like(test_titles)
@@ -34,7 +44,7 @@ def find_most_similar_titles(query_title:str, test_titles:pd.Series, top_n:Optio
     
     # turn 
     similarity_df = pd.DataFrame({
-        'document': test_titles,
+        'project': test_titles,
         #'weight': weights
     })
     similarity_df['similarity'] = similarity_vector

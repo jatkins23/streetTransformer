@@ -14,7 +14,7 @@ import xyzservices.providers as xyz
 from pandas.api.types import is_string_dtype, is_object_dtype
 
 from streettransformer.utils.geocode_crossstreets import geocode_intersection
-from align_docs_and_projects import pipeline, DOCUMENTS_PROCESSED_PATH
+#from .align_docs_and_projects import pipeline, DOCUMENTS_PROCESSED_PATH
 
 
 # ------------------------------------------------------------------------------
@@ -210,7 +210,7 @@ def load_gemini_geocoded_files(path: str) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 if __name__ == '__main__':
-    geocoded_documents = load_gemini_geocoded_files(DOCUMENTS_PROCESSED_PATH / 'gemini_output2.ndjson')
+    #geocoded_documents = load_gemini_geocoded_files(DOCUMENTS_PROCESSED_PATH / 'gemini_output2.ndjson')
     # geocoded_query_result = geocode_cross_streets_column(
     #     geocoded_documents.head(10), 
     #     'cross_streets',
