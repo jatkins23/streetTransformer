@@ -33,10 +33,11 @@ DESCRIPTION = { # Basic Description of each model (for understanding purpose onl
 
 ROLE = "You are a Transportation Engineer employed by the city tasked with analyzing changes in intersection streetscape over time."
 
-FEATURES = ['Curb Extensions & Medians', 'Pedestrian Plazas in Previous Roadway', 'Bus Lanes', 'Bike Lanes or Paths', 'Crosswalk changes', 'Turn Lanes', 'Other Roadway Geometry Changes']
+#FEATURES = ['Curb Extensions & Medians', 'Pedestrian Plazas in Previous Roadway', 'Bus Lanes', 'Bike Lanes or Paths', 'Crosswalk changes', 'Turn Lanes', 'Other Roadway Geometry Changes']
+FEATURES = ['Curb Extensions', 'New or Expanded Median/Pedestrian Refuge Island', 'Bike Enhancement', 'Median Tip Extension', 'Raised Median', 'Lane Removal or Road Narrowing', 'Bus Bulb', 'Shared Street']
 features_list =', '.join([f"'{x}'" for x in FEATURES])
 
-IMAGE_LABELS = "The first image (Image A) is the before and and the second (Image B) is the after."
+IMAGE_LABELS = "The first image is the before and and the second is the after."
 
 GOAL = {
     # Images
@@ -96,6 +97,35 @@ MODEL_INPUT = {
 
 }
 
+MODEL_OUTPUT_SCHEMA =  {
+    'image_change_identifier' : {
+        'change_detected': {'type': 'boolean'},
+        'confidence': {'type': 'integer'},
+        'features': {'type': 'array', 'items': {'type': 'string'}},
+    },
+    'image_change_locator'    : {
+        'coordinates'         : {'type': 'array', 'items': {'type': 'float'}},
+        'confidence'          : {'type': 'integer'}
+    },
+    'image_change_describer'  : {
+        'description'         :  {'type': 'string'}
+    },
+    'image_document_linker'   : {
+        'document_label'      : {'type': 'string'},
+        'match_score'         : {'type': 'integer'}
+    },
+    'document_summarizer'     : {
+        'summary'             : {'type': 'string'},
+        'match_score'         : {'type': 'integer'}
+    },
+    'document_image_linker'   : {
+        'image_label'         : {'type': 'string'},
+        'match_score'         : {'type': int}
+
+    }
+}
+
+
 MODEL_OUTPUT = {
     # 
     'image_change_identifier' : {
@@ -104,22 +134,22 @@ MODEL_OUTPUT = {
         'confidence'          : 'A confidence level (0 to 5 with 5 being the highest) of how sure you are there really is significant change relating exclusively to the features mentioned above.',
     },
     'image_change_locator'    : {
-        'coordinates'         : 'A list of bounding boxes of pixel locatons within the image where the change was detected.',
+        'coordinates'         : 'A list of bounding box of pixel locatons within the image where the change was detected. If no change detected, return an empty list.',
         'confidence'          : 'A list of confidence measures (0 to 5 with 5 being the highest) for each bounding box in order.'
     },
     'image_change_describer'  : {
         'description'         : 'A one sentence description of the change seen',
     },
     'image_document_linker'   : {
-        'document_position'   : 'the position (1st, 2nd or 3rd) of the document that best matches the set of images',
+        'document_label'      : 'the label of the document () that best matches the set of images', # TODO
         #'document_name'       : 'the name of the document that best matches the images',
-        'match_score'         : 'A score 0-5 (10 being the best) for how well this document matches the set of images'
+        'match_score'         : 'A score 0-5 (5 being the best) for how well this document matches the set of images'
     },
     'document_summarizer': {
         'summary'             : 'A one sentence description of the change described'
     },
     'document_image_linker'   : {
-        'image_position'      : 'the position (1st, 2nd or 3rd) of the set of images that best matches the document',
+        'image_label'         : 'the label of the set of images that best matches the document', # TODO
         'match_score'         : 'A score 0-5 (10 being the best) for how well this set of images matches the document'
     },
     'image_change_dater'      : {
@@ -163,8 +193,6 @@ class Query:
         """
         #self.text = form
         return text
-
-
 
 # Image Change Identifier
 QUERIES['image_change_identifier'] = Query(
