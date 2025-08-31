@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 from typing import Callable
 from dataclasses import dataclass, asdict
+from dataclasses_jsonschema import JsonSchemaMixin 
 import json
 from ...config.constants import DATA_PATH
 
@@ -34,23 +35,27 @@ DESCRIPTION = { # Basic Description of each model (for understanding purpose onl
 ROLE = "You are a Transportation Engineer employed by the city tasked with analyzing changes in intersection streetscape over time."
 
 #FEATURES = ['Curb Extensions & Medians', 'Pedestrian Plazas in Previous Roadway', 'Bus Lanes', 'Bike Lanes or Paths', 'Crosswalk changes', 'Turn Lanes', 'Other Roadway Geometry Changes']
-FEATURES = ['Curb Extensions', 'New or Expanded Median/Pedestrian Refuge Island', 'Bike Enhancement', 'Median Tip Extension', 'Raised Median', 'Lane Removal or Road Narrowing', 'Bus Bulb', 'Shared Street']
+FEATURES = ['Curb Extensions', 'New or Expanded Median/Pedestrian Refuge Island', 'Bike Enhancement', 'Median Tip Extension', 'Raised Median', 'Lane Removal or Road Narrowing', 'Bus Bulb', 'Shared Street', 'Sidewalk Redesign']
 features_list =', '.join([f"'{x}'" for x in FEATURES])
 
 IMAGE_LABELS = "The first image is the before and and the second is the after."
 
+SEGMENTATION_ADDITION = 'For your ease, we have provided a graphical segmentation of the infrastructure network for each image. They are positioned to the left of each image.'
+
 GOAL = {
     # Images
     # - Change Identifier
-    'image_change_identifier' : "Your goal in this task is to look at two satellite images taken of the same location at different times and identify if there are any changes in the structural street design which may have taken place between the snapshots. Do NOT hesitate to say there is not significant change if you do not see them. " + IMAGE_LABELS, # TODO: Check if too much focus.
+    'image_change_identifier'      : "Your goal in this task is to look at two satellite images taken of the same location at different times and identify if there are any changes in the structural street design which may have taken place between the snapshots. Do NOT hesitate to say there is not significant change if you do not see them. " + IMAGE_LABELS, # TODO: Check if too much focus.
+    'sidebyside_change_identifier' : "Your goal in this task is to look at two satellite images taken of the same location at different times and identify if there are any changes in the structural street design which may have taken place between the snapshots. Do NOT hesitate to say there is not significant change if you do not see them. " + IMAGE_LABELS, # TODO: Check if too much focus.
     # - Change Locator
-    'image_change_locator'    : "Your goal in this task is to look at two satellite images taken of the same location at different times and any possible locate changes in {feature} which may have taken place between the snapshots. Do NOT hesitate to say there is not significant change if you do not see them. " + IMAGE_LABELS,
+    'image_change_locator'         : "Your goal in this task is to look at two satellite images taken of the same location at different times and locate any possible changes in {feature} which may have taken place between the snapshots. Do NOT hesitate to say there is not significant change if you do not see them. " + IMAGE_LABELS,
     # - Change Describer
-    'image_change_describer'  : "Your goal in this task is to look at two satellite images taken of the same location at different times and write a 1 sentence description of the changes that you see. " + IMAGE_LABELS,
+    'image_change_describer'       : "Your goal in this task is to look at two satellite images taken of the same location at different times and write a 1 sentence description of the changes that you see. " + IMAGE_LABELS,
     # - Link to Documents
-    'image_document_linker'   : "Your goal in this task is to look at a set of two images of the same location at different dates, and then look at a set of three city documents that describe infrastructural change at an intersection level. Your goal is to determine which of the three documents best matches the changes that you can see in the two images. " + IMAGE_LABELS, 
+    'image_document_linker'        : "Your goal in this task is to look at a set of two images of the same location at different dates, and then look at a set of three city documents that describe infrastructural change at an intersection level. Your goal is to determine which of the three documents best matches the changes that you can see in the two images. " + IMAGE_LABELS, 
+    'sidebyside_document_linker'   : "Your goal in this task is to look at a set of two images of the same location at different dates, and then look at a set of three city documents that describe infrastructural change at an intersection level. Your goal is to determine which of the three documents best matches the changes that you can see in the two images. " + IMAGE_LABELS, 
     # - Change Dater
-    'image_change_dater'      : "Your goal in this task is to look at an ordered set of images of the same location across different dates, and identify when the significant infrastrcutural change occured, if it did at all.",
+    'image_change_dater'           : "Your goal in this task is to look at an ordered set of images of the same location across different dates, and identify when the significant infrastrcutural change occured, if it did at all.",
 
     # Documents
     # - Change Identifer
@@ -97,34 +102,32 @@ MODEL_INPUT = {
 
 }
 
-MODEL_OUTPUT_SCHEMA =  {
-    'image_change_identifier' : {
-        'change_detected': {'type': 'boolean'},
-        'confidence': {'type': 'integer'},
-        'features': {'type': 'array', 'items': {'type': 'string'}},
-    },
-    'image_change_locator'    : {
-        'coordinates'         : {'type': 'array', 'items': {'type': 'float'}},
-        'confidence'          : {'type': 'integer'}
-    },
-    'image_change_describer'  : {
-        'description'         :  {'type': 'string'}
-    },
-    'image_document_linker'   : {
-        'document_label'      : {'type': 'string'},
-        'match_score'         : {'type': 'integer'}
-    },
-    'document_summarizer'     : {
-        'summary'             : {'type': 'string'},
-        'match_score'         : {'type': 'integer'}
-    },
-    'document_image_linker'   : {
-        'image_label'         : {'type': 'string'},
-        'match_score'         : {'type': int}
+@dataclass
+class QueryOutput(JsonSchemaMixin):
+    pass
 
-    }
-}
+@dataclass
+class ChangeIdentifierOutput(QueryOutput):
+    change_detected: bool
+    confidence: int
+    features: list[str]
 
+@dataclass
+class LocatorOutput(QueryOutput):
+    coordinates: list[float]
+    confidence: int
+
+@dataclass
+class DescriberOutput(QueryOutput):
+    description: str
+
+@dataclass
+class LinkerOutput(QueryOutput):
+    match_label: str
+    match_score: int
+
+class DaterOutput(QueryOutput):
+    years: list[str]
 
 MODEL_OUTPUT = {
     # 
@@ -172,7 +175,8 @@ class Query:
     name: str
     role: str
     goal: str
-    output: dict[str, str]
+    output_prompt: dict[str, str]
+    output_schema: Callable # QueryOutput
     input: dict[str, str]|None = None # TODO: Add thies
     focus: str|None            = None
     description: str|None      = None
@@ -180,14 +184,14 @@ class Query:
 
     def text(self): 
 
-        columns_joined = "\n".join(["\t- " + x for x in self.output])
+        columns_joined = "\n".join(["\t- " + x for x in self.output_prompt])
         text = f"""
         Role: {self.role}
 
         Goal: {self.goal} {self.focus}
 
         Respond: {ASK.format(
-            n_columns=len(self.output),
+            n_columns=len(self.output_prompt),
             columns_joined=columns_joined)
         }
         """
@@ -196,83 +200,91 @@ class Query:
 
 # Image Change Identifier
 QUERIES['image_change_identifier'] = Query(
-    name    = 'image_change_identifier', 
-    role        = ROLE,
-    goal        = GOAL['image_change_identifier'],
-    focus       = FOCUS['image_change_identifier'],
-    input       = MODEL_INPUT['image_change_identifier'],
-    output      = MODEL_OUTPUT['image_change_identifier'],
-    description = DESCRIPTION['image_change_identifier']
+    name          = 'image_change_identifier', 
+    role          = ROLE,
+    goal          = GOAL['image_change_identifier'],
+    focus         = FOCUS['image_change_identifier'],
+    input         = MODEL_INPUT['image_change_identifier'],
+    output_prompt = MODEL_OUTPUT['image_change_identifier'],
+    output_schema = ChangeIdentifierOutput,
+    description   = DESCRIPTION['image_change_identifier']
 )
 
 QUERIES['image_change_locator_sidewalk'] = Query(
-    name        = 'image_change_locator_sidewalk',
-    role        = ROLE,
-    goal        = GOAL['image_change_locator'],
-    focus       = FOCUS['image_change_locator'].format(feature='Sidewalk & Curb'),
-    input       = MODEL_INPUT['image_change_locator'],
-    output      = MODEL_OUTPUT['image_change_locator'],
-    description = DESCRIPTION['image_change_locator']
+    name          = 'image_change_locator_sidewalk',
+    role          = ROLE,
+    goal          = GOAL['image_change_locator'],
+    focus         = FOCUS['image_change_locator'].format(feature='Sidewalk & Curb'),
+    input         = MODEL_INPUT['image_change_locator'],
+    output_prompt = MODEL_OUTPUT['image_change_locator'],
+    output_schema = LocatorOutput,
+    description   = DESCRIPTION['image_change_locator']
 )
 
 QUERIES['image_change_locator_crosswalk'] = Query(
-    name        = 'image_change_locator_crosswalk',
-    role        = ROLE,
-    goal        = GOAL['image_change_locator'],
-    focus       = (FOCUS['image_change_locator']).format(feature='Crosswalks'),
-    input       = MODEL_INPUT['image_change_locator'],
-    output      = MODEL_OUTPUT['image_change_locator'],
-    description = DESCRIPTION['image_change_locator']
+    name          = 'image_change_locator_crosswalk',
+    role          = ROLE,
+    goal          = GOAL['image_change_locator'],
+    focus         = (FOCUS['image_change_locator']).format(feature='Crosswalks'),
+    input         = MODEL_INPUT['image_change_locator'],
+    output_prompt = MODEL_OUTPUT['image_change_locator'],
+    output_schema = LocatorOutput,
+    description   = DESCRIPTION['image_change_locator']
 )
 
 QUERIES['image_change_describer'] = Query(
-    name        = 'image_change_describer',
-    role        = ROLE,
-    goal        = GOAL['image_change_describer'],
-    focus       = FOCUS['image_change_describer'],
-    input       = MODEL_INPUT['image_change_describer'],
-    output      = MODEL_OUTPUT['image_change_describer'],
-    description = DESCRIPTION['image_change_describer']
+    name          = 'image_change_describer',
+    role          = ROLE,
+    goal          = GOAL['image_change_describer'],
+    focus         = FOCUS['image_change_describer'],
+    input         = MODEL_INPUT['image_change_describer'],
+    output_prompt = MODEL_OUTPUT['image_change_describer'],
+    output_schema = DescriberOutput,
+    description   = DESCRIPTION['image_change_describer']
 )
 
 QUERIES['image_document_linker'] = Query(
-    name        = 'image_document_linker',
-    role        = ROLE,
-    goal        = GOAL['image_document_linker'],
-    focus       = FOCUS['image_document_linker'],
-    input       = MODEL_INPUT['image_document_linker'],
-    output      = MODEL_OUTPUT['image_document_linker'],
-    description = DESCRIPTION['image_document_linker']
+    name          = 'image_document_linker',
+    role          = ROLE,
+    goal          = GOAL['image_document_linker'],
+    focus         = FOCUS['image_document_linker'],
+    input         = MODEL_INPUT['image_document_linker'],
+    output_prompt = MODEL_OUTPUT['image_document_linker'],
+    output_schema = LinkerOutput,
+    description   = DESCRIPTION['image_document_linker']
 )
 
 QUERIES['image_change_dater'] = Query(
-    name        = 'image_change_dater',
-    role        = ROLE,
-    goal        = GOAL['image_change_dater'],
-    focus       = FOCUS['image_change_dater'],
-    input       = MODEL_INPUT['image_change_dater'],
-    output      = MODEL_OUTPUT['image_change_dater'],
-    description = DESCRIPTION['image_change_dater']
+    name          = 'image_change_dater',
+    role          = ROLE,
+    goal          = GOAL['image_change_dater'],
+    focus         = FOCUS['image_change_dater'],
+    input         = MODEL_INPUT['image_change_dater'],
+    output_prompt = MODEL_OUTPUT['image_change_dater'],
+    output_schema = DaterOutput,
+    description   = DESCRIPTION['image_change_dater']
 )
 
 QUERIES['document_summarizer'] = Query(
-    name        = 'document_summarizer',
-    role        = ROLE,
-    goal        = GOAL['document_summarizer'],
-    focus       = FOCUS['document_summarizer'],
-    input       = MODEL_INPUT['document_summarizer'],
-    output      = MODEL_OUTPUT['document_summarizer'],
-    description = DESCRIPTION['document_summarizer'],
+    name          = 'document_summarizer',
+    role          = ROLE,
+    goal          = GOAL['document_summarizer'],
+    focus         = FOCUS['document_summarizer'],
+    input         = MODEL_INPUT['document_summarizer'],
+    output_prompt = MODEL_OUTPUT['document_image_linker'],
+    output_schema = DescriberOutput,
+    description   = DESCRIPTION['document_summarizer'],
 )
 
 QUERIES['document_image_linker'] = Query(
-    name        = 'document_image_linker',
-    role        = ROLE,
-    goal        = GOAL['document_image_linker'],
-    focus       = FOCUS['document_image_linker'],
-    input       = MODEL_INPUT['document_image_linker'],
-    output      = MODEL_OUTPUT['document_image_linker'],
-    description = DESCRIPTION['document_image_linker']
+    name          = 'document_image_linker',
+    role          = ROLE,
+    goal          = GOAL['document_image_linker'],
+    focus         = FOCUS['document_image_linker'],
+    input         = MODEL_INPUT['document_image_linker'],
+    output_prompt = MODEL_OUTPUT['document_image_linker'],
+    output_schema = LinkerOutput,
+    description   = DESCRIPTION['document_image_linker']
 )
 
 from dataclasses import dataclass, asdict

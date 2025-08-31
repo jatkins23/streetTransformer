@@ -5,6 +5,7 @@ from typing import Iterable, Sequence, Optional, Dict, Any
 import base64, json, os, time, concurrent.futures as cf
 from tqdm import tqdm
 from dotenv import load_dotenv
+from pprint import pprint
 
 load_dotenv()
 os.getenv('OPENAI_API_KEY') 
@@ -13,6 +14,8 @@ os.getenv('OPENAI_API_KEY')
 from openai import OpenAI, APIStatusError, APITimeoutError, RateLimitError
 from PIL import Image
 import fitz  # PyMuPDF
+
+from .models.queries import QUERIES, Query
 
 # -----------------------------
 # Config
@@ -31,6 +34,7 @@ PDF_PAGES_PER_FILE = 1         # render first N pages per PDF
 class WorkItem:
     item_id: str
     prompt: str
+    json_schema: dict
     files: list[tuple[str, Path]] = ()   # now store (label, path)
 
 # -----------------------------
@@ -104,7 +108,7 @@ def build_messages(prompt: str, files: list[tuple[str, Path]]) -> list[dict[str,
     return [{"role": "user", "content": content}]
 
 
-def safe_chat_with_retries(client: OpenAI, model: str, messages: list[dict[str, Any]]) -> dict[str, Any]:
+def safe_chat_with_retries(client: OpenAI, model: str, messages: list[dict[str, Any]], output_schema:dict) -> dict[str, Any]:
     delay = 1.0
     for attempt in range(1, MAX_RETRIES + 1):
         try:
@@ -115,17 +119,8 @@ def safe_chat_with_retries(client: OpenAI, model: str, messages: list[dict[str, 
                 response_format={
                     "type": "json_schema",  # 👈 enforce JSON
                     'json_schema': {
-                        'name': 'image_change_identifier',
-                        'schema': {
-                            'type': 'object',
-                            'properties': {
-                                'change_detected': {'type': 'boolean'},
-                                'confidence': {'type': 'integer'},
-                                'features': {'type': 'array', 'items': {'type': 'string'}},
-                                #'summary': {'type': 'string'}
-                            },
-                            'required': ['change_detected','confidence']
-                        }
+                        'name': 'output_name',
+                        'schema': output_schema[1]
                     }
                 }
             ).to_dict()
@@ -141,7 +136,7 @@ def extract_json(resp: dict[str, Any]) -> dict[str, Any]:
 
 def process_item(client: OpenAI, model: str, w: WorkItem) -> dict[str, Any]:
     messages = build_messages(w.prompt, w.files)
-    resp = safe_chat_with_retries(client, model, messages)
+    resp = safe_chat_with_retries(client, model, messages, w.json_schema)
     return {
         "item_id": w.item_id,
         "model": model,
@@ -200,26 +195,10 @@ def run_bulk(
                 rec = {"item_id": w.item_id, "error": str(e)}
             write_record(rec)
 
-# -----------------------------
-# CLI
-# -----------------------------
-if __name__ == "__main__":
-    import argparse, pandas as pd
-
-    p = argparse.ArgumentParser(description="Bulk ChatGPT vision calls over PNG/PDF files.")
-    p.add_argument("--model", default=DEFAULT_MODEL)
-    p.add_argument("--input", type=Path, required=True,
-                   help="CSV with columns: item_id,prompt,file_paths (semicolon-separated, each .png or .pdf).")
-    p.add_argument("--out", type=Path, required=True, help="Output NDJSON path.")
-    p.add_argument("--max-workers", type=int, default=MAX_WORKERS_DEFAULT)
-    p.add_argument("--pdf-pages-per-file", type=int, default=PDF_PAGES_PER_FILE,
-                   help="How many pages to render per PDF (default 1). Still capped by total files per item.")
-    args = p.parse_args()
-
+def bulk_query_on_df(query: Query, df: pd.DataFrame, outfile:Path, model:str=DEFAULT_MODEL, max_workers:int=MAX_WORKERS_DEFAULT, pdf_pages_per_file:int=PDF_PAGES_PER_FILE, pbar:bool=True):
     # allow override for this run
-    PDF_PAGES_PER_FILE = max(1, args.pdf_pages_per_file)
+    pprint(query.output_schema.json_schema()['allOf'])
 
-    df = pd.read_csv(args.input)
     # In CLI section after reading df
     items: list[WorkItem] = []
     for row in df.itertuples(index=False):
@@ -233,6 +212,41 @@ if __name__ == "__main__":
                 p = Path(path_str.strip())
                 if p.exists() and p.suffix.lower() in (".png", ".pdf"):
                     files.append((label.strip(), p))
-        items.append(WorkItem(item_id=str(row.item_id), prompt=str(row.prompt), files=files))
+        items.append(WorkItem(item_id=str(row.item_id), prompt=query.text(), files=files, json_schema=query.output_schema.json_schema()['allOf']))
 
-    run_bulk(items, out_ndjson=args.out, model=args.model, max_workers=args.max_workers)
+    run_bulk(items, out_ndjson=outfile, model=model, max_workers=max_workers)
+
+
+# -----------------------------
+# CLI
+# -----------------------------
+if __name__ == "__main__":
+    import argparse, pandas as pd
+
+    p = argparse.ArgumentParser(description="Bulk ChatGPT vision calls over PNG/PDF files.")
+    p.add_argument("-m", "--model", default=DEFAULT_MODEL)
+    p.add_argument("-q", "--query", default='image_change_identifier')
+    p.add_argument("--input", type=Path, required=True,
+                   help="CSV with columns: item_id,prompt,file_paths (semicolon-separated, each .png or .pdf).")
+    p.add_argument("--out", type=Path, required=True, help="Output NDJSON path.")
+    p.add_argument("--max-workers", type=int, default=MAX_WORKERS_DEFAULT)
+    p.add_argument("--pdf-pages-per-file", type=int, default=PDF_PAGES_PER_FILE,
+                   help="How many pages to render per PDF (default 1). Still capped by total files per item.")
+    args = p.parse_args()
+
+    df = pd.read_csv(args.input)
+    # Reconcile query
+    try:
+        query = QUERIES[args.query]
+        
+    except Exception as e:
+        print(f'{args.query} not found in QUERIES!\n\tOptions are {", ".join(QUERIES.keys())}')
+        raise e
+    
+    pdf_pages_per_file = max(1, args.pdf_pages_per_file)
+
+    run_query_on_df(query=query, df=df, model=args.model, outfile=args.out, max_workers=args.max_workers, pdf_pages_per_file=pdf_pages_per_file)
+
+    
+    
+    
