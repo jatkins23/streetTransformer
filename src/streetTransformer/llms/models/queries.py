@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from typing import Callable
+from typing import Callable, Any
 from dataclasses import dataclass, asdict
 from dataclasses_jsonschema import JsonSchemaMixin 
 import json
@@ -10,6 +10,7 @@ from ...config.constants import DATA_PATH
 
 #Uri = NewType("URI", str)
 URI = str
+YEARS = ['2006', '2012' ,'2014', '2018', '2024']
 
 # load_dotenv()
 # os.getenv('GEMINI_API_KEY')
@@ -19,17 +20,18 @@ URI = str
 DESCRIPTION = { # Basic Description of each model (for understanding purpose only)
     # Image
     'image_change_identifier'    : 'Identify change between two images focusing on given streetscape interventions (FEATURES)', 
+    'sidebyside_change_identifier': 'Identify change between two sets of images (sets include satellite and rasterized segmentation) focusing on given streetscape interventions (FEATURES)', 
     'image_change_locator'       : 'Identify where in the image the features are located. Run for any feature but focus on Sidewalk/Curb and Crosswalk', # Due to validation
     'image_change_describer'     : 'Describe the changes using a limited domain expertise and prompting for solely focusing on FEATURES. Use 1 sentence and then use CLIP to embed this.', # compare with document_summarizer embedding
     'image_document_linker'      : 'Which of these three documents describes the change between these two images?',
     'image_change_dater'         : 'Given an ordered set of images of the same location over time, identify when the change occured',
+    'sidebyside_change_dater'         : 'Given an ordered set of image, segmentation pairs of the same location over time, identify when the change occured',
     # 'image_locator' -- to do better, would 
     # Document
     # 'document_change_identifier' : '', # nothing? Compare with ontology?
     #'document_change_locator'    : '', # nothing # something with the ontology
     'document_summarizer' : 'Describe the changes in the this document. Ignore geographic, government or process details - focus exclusively on streetscape changes that might', # Then use CLIP to embed and compare
     'document_image_linker'      : 'Which of these three sets of images best matches the description in this document? {FOCUS}'
-    ''
 }
 
 ROLE = "You are a Transportation Engineer employed by the city tasked with analyzing changes in intersection streetscape over time."
@@ -45,17 +47,18 @@ SEGMENTATION_ADDITION = 'For your ease, we have provided a graphical segmentatio
 GOAL = {
     # Images
     # - Change Identifier
-    'image_change_identifier'      : "Your goal in this task is to look at two satellite images taken of the same location at different times and identify if there are any changes in the structural street design which may have taken place between the snapshots. Do NOT hesitate to say there is not significant change if you do not see them. " + IMAGE_LABELS, # TODO: Check if too much focus.
-    'sidebyside_change_identifier' : "Your goal in this task is to look at two satellite images taken of the same location at different times and identify if there are any changes in the structural street design which may have taken place between the snapshots. Do NOT hesitate to say there is not significant change if you do not see them. " + IMAGE_LABELS, # TODO: Check if too much focus.
+    'image_change_identifier'      : "Your goal is to look at two satellite images taken of the same location at different times and identify if there are any changes in the structural street design which may have taken place between the snapshots. Do NOT hesitate to say there is not significant change if you do not see them. " + IMAGE_LABELS, # TODO: Check if too much focus.
+    'sidebyside_change_identifier' : "Your goal is to look at two set of images that represent the same location at different times and identify if there are any changes in the structural street design which may have taken place between the snapshots. Each image set contains a satellite image (left), and a digital segmentation of the satelite image (right) segmented into different infrastructual feature classes represented as colors). Do NOT hesitate to say there is not significant change if you do not see them. " + IMAGE_LABELS,
     # - Change Locator
-    'image_change_locator'         : "Your goal in this task is to look at two satellite images taken of the same location at different times and locate any possible changes in {feature} which may have taken place between the snapshots. Do NOT hesitate to say there is not significant change if you do not see them. " + IMAGE_LABELS,
+    'image_change_locator'         : "Your goal is to look at two satellite images taken of the same location at different times and locate any possible changes in {feature} which may have taken place between the snapshots. Do NOT hesitate to say there is not significant change if you do not see them. " + IMAGE_LABELS,
     # - Change Describer
-    'image_change_describer'       : "Your goal in this task is to look at two satellite images taken of the same location at different times and write a 1 sentence description of the changes that you see. " + IMAGE_LABELS,
+    'image_change_describer'       : "Your goal is to look at two satellite images taken of the same location at different times and write a 1 sentence description of the changes that you see. " + IMAGE_LABELS,
     # - Link to Documents
-    'image_document_linker'        : "Your goal in this task is to look at a set of two images of the same location at different dates, and then look at a set of three city documents that describe infrastructural change at an intersection level. Your goal is to determine which of the three documents best matches the changes that you can see in the two images. " + IMAGE_LABELS, 
-    'sidebyside_document_linker'   : "Your goal in this task is to look at a set of two images of the same location at different dates, and then look at a set of three city documents that describe infrastructural change at an intersection level. Your goal is to determine which of the three documents best matches the changes that you can see in the two images. " + IMAGE_LABELS, 
+    'image_document_linker'        : "Your goal is to look at a set of two images of the same location at different dates, and then look at a set of three city documents that describe infrastructural change at an intersection level. Your goal is to determine which of the three documents best matches the changes that you can see in the two images. " + IMAGE_LABELS, 
+    'sidebyside_document_linker'   : "Your goal is to look at a set of two images of the same location at different dates, and then look at a set of three city documents that describe infrastructural change at an intersection level. Your goal is to determine which of the three documents best matches the changes that you can see in the two images. " + IMAGE_LABELS, 
     # - Change Dater
-    'image_change_dater'           : "Your goal in this task is to look at an ordered set of images of the same location across different dates, and identify when the significant infrastrcutural change occured, if it did at all.",
+    'image_change_dater'           : "Your goal is to look at an ordered set of images of the same location across different dates, and identify when the significant infrastrcutural change occured, if it did at all.",
+    'sidebyside_change_identifier' : "Your goal is to look at an ordered set of sets of images that represent the same location at different times and identify if there are any changes in the structural street design which may have taken place between the snapshots. Each image set contains a satellite image (left), and a digital segmentation of the satelite image (right) segmented into different infrastructual feature classes represented as colors). Do NOT hesitate to say there is not significant change if you do not see them. " + IMAGE_LABELS,
 
     # Documents
     # - Change Identifer
@@ -77,13 +80,11 @@ FOCUS = {
     # - Link to Documents
     'image_document_linker'     : "", # Not necessary?
     # - Change Dater
-    'image_change_dater'        : f"Limit this analysis to only capital reconstruction features including: {features_list})",
 
     # Document
-    'document_summarizer' : f"Ignore geographic, government or process details - focus exclusively on captial reconstruction changes to the streetscape using lingo of a Transportation Engineer including: {features_list}",
-    'document_image_linker'     : "Ignore any refereces to geography. You are solely looking at the changes in the streetscape."
-
-
+    'document_summarizer'       : f"Ignore geographic, government or process details - focus exclusively on captial reconstruction changes to the streetscape using lingo of a Transportation Engineer including: {features_list}",
+    'document_image_linker'     : "Ignore any refereces to geography. You are solely looking at the changes in the streetscape.",
+    'image_change_dater'        : f"Limit this analysis to only capital reconstruction features including: {features_list})"
 }
 
 ASK = "Please respond in a well formatted json exclusively with {n_columns} tags:\n{columns_joined}"
@@ -99,7 +100,6 @@ MODEL_INPUT = {
     'document_image_linker'  : [('document', URI),
                                 ('images', (('image_A', URI), ('image_B', URI), ('image_C', URI)))],
     'image_change_dater'     : [('image_list', list[URI])]
-
 }
 
 @dataclass
@@ -127,43 +127,43 @@ class LinkerOutput(QueryOutput):
     match_score: int
 
 class DaterOutput(QueryOutput):
-    years: list[str]
+    change_detected: bool
+    change_locations: list[dict[str, Any]]
 
 MODEL_OUTPUT = {
     # 
     'image_change_identifier' : {
-        'change_detected'     : 'A boolean value if you detect significant change with regards to the above categories.',
+        'change_detected'     : 'A boolean value if you detect significant change with regards to the above categories. Respond exclusively with True or False.',
         'features_detected'   : 'A list of the specific features you see having changed between the two photos. This list should feature exclusively the keywords included above.',
-        'confidence'          : 'A confidence level (0 to 5 with 5 being the highest) of how sure you are there really is significant change relating exclusively to the features mentioned above.',
+        'confidence'          : 'An integer confidence level (0 to 5 with 5 being the highest) of how sure you are there really is significant change relating exclusively to the features mentioned above.',
+    },
+    'sidebyside_change_identifier' : {
+        'change_detected'     : 'A boolean value if you detect significant change with regards to the above categories. Respond exclusively with True or False.',
+        'features_detected'   : 'A list of the specific features you see having changed between the two sets of images. This list should feature exclusively the keywords included above.',
+        'confidence'          : 'An integer confidence level (0 to 5 with 5 being the highest) of how sure you are there really is significant change relating exclusively to the features mentioned above.',
     },
     'image_change_locator'    : {
-        'coordinates'         : 'A list of bounding box of pixel locatons within the image where the change was detected. If no change detected, return an empty list.',
-        'confidence'          : 'A list of confidence measures (0 to 5 with 5 being the highest) for each bounding box in order.'
+        'coordinates'         : 'A set of pixel locations within the image where the change was detected. If no change detected, return an empty list.',
+        'confidence'          : 'An integer confidence measure (0 to 5 with 5 being the highest) the bounding box.'
     },
     'image_change_describer'  : {
-        'description'         : 'A one sentence description of the change seen',
+        'description'         : 'A one sentence description of the change seen.',
     },
     'image_document_linker'   : {
-        'document_label'      : 'the label of the document () that best matches the set of images', # TODO
+        'document_label'      : 'the label of the document (Document A, B, or C) that best matches the set of images. Respond exclusively with A, B or C',
         #'document_name'       : 'the name of the document that best matches the images',
-        'match_score'         : 'A score 0-5 (5 being the best) for how well this document matches the set of images'
+        'match_score'         : 'An integer score 0-5 (5 being the best) for how well this document matches the set of images'
     },
     'document_summarizer': {
-        'summary'             : 'A one sentence description of the change described'
+        'summary'             : 'A one sentence description of the change described.'
     },
     'document_image_linker'   : {
-        'image_label'         : 'the label of the set of images that best matches the document', # TODO
+        'image_label'         : 'The label of the set of images (Image A, B, or C) that best matches the document. Respond exclusively with A, B or C', # TODO
         'match_score'         : 'A score 0-5 (10 being the best) for how well this set of images matches the document'
     },
     'image_change_dater'      : {
-        'change_detected'     : 'A boolean value if you detect significant change with regards to the above categories.',
-        'change_locations'    : """
-            A list of dictionaries that identify when key change occurs. These dictionaries will include: {
-                'image_id': the id  of the first image in the list showing this change 
-                'features_detected':  the specific features detected in this change
-                'confidence': A score 0-5 (10 being the best) for how well this document matches the set of images
-            }
-            """
+        'change_detected'     : 'A boolean value if you detect significant change with regards to the above categories. Respond exclusively with True or False',
+        'change_locations'    : f"A list of image IDs that you believe show a significant change from the image before. Please only respond with {YEARS}"
     }
 }
 
@@ -184,7 +184,7 @@ class Query:
 
     def text(self): 
 
-        columns_joined = "\n".join(["\t- " + x for x in self.output_prompt])
+        columns_joined = "\n".join([f"\t- {k}: {v}" for k, v in self.output_prompt.items()])
         text = f"""
         Role: {self.role}
 
@@ -209,6 +209,18 @@ QUERIES['image_change_identifier'] = Query(
     output_schema = ChangeIdentifierOutput,
     description   = DESCRIPTION['image_change_identifier']
 )
+
+QUERIES['sidebyside_change_identifier'] = Query(
+    name          = 'sidebyside_change_identifier', 
+    role          = ROLE,
+    goal          = GOAL['image_change_identifier'],
+    focus         = FOCUS['image_change_identifier'],
+    input         = MODEL_INPUT['image_change_identifier'],
+    output_prompt = MODEL_OUTPUT['sidebyside_change_identifier'],
+    output_schema = ChangeIdentifierOutput,
+    description   = DESCRIPTION['image_change_identifier']
+)
+
 
 QUERIES['image_change_locator_sidewalk'] = Query(
     name          = 'image_change_locator_sidewalk',
@@ -265,6 +277,17 @@ QUERIES['image_change_dater'] = Query(
     description   = DESCRIPTION['image_change_dater']
 )
 
+QUERIES['sidebyside_change_dater'] = Query(
+    name          = 'sidebyside_change_dater',
+    role          = ROLE,
+    goal          = GOAL['image_change_dater'],
+    focus         = FOCUS['image_change_dater'],
+    input         = MODEL_INPUT['image_change_dater'],
+    output_prompt = MODEL_OUTPUT['image_change_dater'],
+    output_schema = DaterOutput,
+    description   = DESCRIPTION['sidebyside_change_dater']
+)
+
 QUERIES['document_summarizer'] = Query(
     name          = 'document_summarizer',
     role          = ROLE,
@@ -285,6 +308,17 @@ QUERIES['document_image_linker'] = Query(
     output_prompt = MODEL_OUTPUT['document_image_linker'],
     output_schema = LinkerOutput,
     description   = DESCRIPTION['document_image_linker']
+)
+
+QUERIES['test'] = Query(
+    name          = 'test_query',
+    role          = '',
+    goal          = 'Please describe the input in 10 words',
+    focus         = '',
+    input         = {'': ''},
+    output_prompt = {'': ''},
+    output_schema = DescriberOutput,
+    description   = 'Test to see what is the image'
 )
 
 from dataclasses import dataclass, asdict
@@ -309,17 +343,6 @@ def custom_serializer(obj):
 
 
 if __name__ == '__main__':
-    MODEL_OUTPUT_FILE = DATA_PATH / 'runtime' / 'model_config' / 'queries.json'
-    MODEL_OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    errors=0
-    with open(MODEL_OUTPUT_FILE, 'w') as f:
-        f.write('[\n')
-        for k, v in QUERIES.items():
-            try:
-                json_str = json.dumps(asdict(v), default=custom_serializer, indent=2)
-                f.write(json_str + ',\n')
-            except Exception as e:
-                errors+= 1
-                print(f'{k}-{v}-{e}')
-
-        f.write('\n]')
+    for name, q in QUERIES.items():
+        print(name)
+        print(q.text())

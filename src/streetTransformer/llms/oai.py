@@ -5,7 +5,7 @@ from typing import Iterable, Sequence, Optional, Dict, Any
 import base64, json, os, time, concurrent.futures as cf
 from tqdm import tqdm
 from dotenv import load_dotenv
-from pprint import pprint
+import threading
 
 load_dotenv()
 os.getenv('OPENAI_API_KEY') 
@@ -14,6 +14,7 @@ os.getenv('OPENAI_API_KEY')
 from openai import OpenAI, APIStatusError, APITimeoutError, RateLimitError
 from PIL import Image
 import fitz  # PyMuPDF
+from ..config.constants import DATA_PATH
 
 from .models.queries import QUERIES, Query
 
@@ -25,7 +26,8 @@ MAX_WORKERS_DEFAULT = 8
 MAX_RETRIES = 5
 TIMEOUT_S = 120
 MAX_FILES_PER_ITEM = 5         # hard cap to protect tokens
-PDF_PAGES_PER_FILE = 1         # render first N pages per PDF
+PDF_PAGES_PER_FILE = 10         # render first N pages per PDF: 0 = all
+PDF_DPI_SCALE = 2.0
 
 # -----------------------------
 # Data structures
@@ -152,6 +154,7 @@ def run_bulk(
     out_ndjson: Path,
     model: str = DEFAULT_MODEL,
     max_workers: int = MAX_WORKERS_DEFAULT,
+    query_name: str=''
 ) -> None:
     out_ndjson.parent.mkdir(parents=True, exist_ok=True)
 
@@ -173,7 +176,7 @@ def run_bulk(
         print("Nothing to do; everything is already processed.")
         return
 
-    lock = cf.thread.Lock() if hasattr(cf, "thread") else None
+    lock = threading.Lock() if hasattr(cf, "thread") else None
 
     def write_record(rec: Dict[str, Any]):
         line = json.dumps(rec, ensure_ascii=False)
@@ -187,7 +190,7 @@ def run_bulk(
 
     with cf.ThreadPoolExecutor(max_workers=max_workers) as ex:
         futures = {ex.submit(process_item, client, model, w): w for w in work}
-        for fut in tqdm(cf.as_completed(futures), total=len(work), desc="Processing"):
+        for fut in tqdm(cf.as_completed(futures), total=len(work), desc=f"Processing {query_name}"):
             w = futures[fut]
             try:
                 rec = fut.result()
@@ -197,7 +200,6 @@ def run_bulk(
 
 def bulk_query_on_df(query: Query, df: pd.DataFrame, outfile:Path, model:str=DEFAULT_MODEL, max_workers:int=MAX_WORKERS_DEFAULT, pdf_pages_per_file:int=PDF_PAGES_PER_FILE, pbar:bool=True):
     # allow override for this run
-    pprint(query.output_schema.json_schema()['allOf'])
 
     # In CLI section after reading df
     items: list[WorkItem] = []
@@ -212,9 +214,16 @@ def bulk_query_on_df(query: Query, df: pd.DataFrame, outfile:Path, model:str=DEF
                 p = Path(path_str.strip())
                 if p.exists() and p.suffix.lower() in (".png", ".pdf"):
                     files.append((label.strip(), p))
+                else:
+                    p = DATA_PATH / p
+                    if p.exists() and p.suffix.lower() in (".png", ".pdf"):
+                        files.append((label.strip(), p))
+
+                if len(files) == 0:
+                    raise ValueError('Files not found! Check paths')
         items.append(WorkItem(item_id=str(row.item_id), prompt=query.text(), files=files, json_schema=query.output_schema.json_schema()['allOf']))
 
-    run_bulk(items, out_ndjson=outfile, model=model, max_workers=max_workers)
+    run_bulk(items, out_ndjson=outfile, model=model, max_workers=max_workers, query_name=query.name)
 
 
 # -----------------------------
@@ -226,10 +235,10 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser(description="Bulk ChatGPT vision calls over PNG/PDF files.")
     p.add_argument("-m", "--model", default=DEFAULT_MODEL)
     p.add_argument("-q", "--query", default='image_change_identifier')
-    p.add_argument("--input", type=Path, required=True,
+    p.add_argument("-i", "--input", type=Path, required=True,
                    help="CSV with columns: item_id,prompt,file_paths (semicolon-separated, each .png or .pdf).")
-    p.add_argument("--out", type=Path, required=True, help="Output NDJSON path.")
-    p.add_argument("--max-workers", type=int, default=MAX_WORKERS_DEFAULT)
+    p.add_argument("-o", "--out", type=Path, required=True, help="Output NDJSON path.")
+    p.add_argument("-w", "--max-workers", type=int, default=MAX_WORKERS_DEFAULT)
     p.add_argument("--pdf-pages-per-file", type=int, default=PDF_PAGES_PER_FILE,
                    help="How many pages to render per PDF (default 1). Still capped by total files per item.")
     args = p.parse_args()
@@ -245,7 +254,7 @@ if __name__ == "__main__":
     
     pdf_pages_per_file = max(1, args.pdf_pages_per_file)
 
-    run_query_on_df(query=query, df=df, model=args.model, outfile=args.out, max_workers=args.max_workers, pdf_pages_per_file=pdf_pages_per_file)
+    bulk_query_on_df(query=query, df=df, model=args.model, outfile=args.out, max_workers=args.max_workers, pdf_pages_per_file=pdf_pages_per_file)
 
     
     
