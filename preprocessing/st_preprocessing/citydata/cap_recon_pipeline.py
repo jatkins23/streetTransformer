@@ -69,7 +69,7 @@ def gather_capital_projects_for_locations(locations_gdf:gpd.GeoDataFrame, outfil
 
     # summarize
     location_projects_gdf = hits.rename(columns = {'index_right': 'city_project_id',})
-    hits['distance'] = distance_to_project
+    location_projects_gdf['distance'] = distance_to_project
     export_cols = locations_gdf.columns.tolist() + [
         'ProjectID','city_project_id','ProjTitle','ProjectType', 'ProjectStatus', 'ConstructionFY',
          'DesignStartDate', 'ConstructionEndDate', 'CurrentFunding',

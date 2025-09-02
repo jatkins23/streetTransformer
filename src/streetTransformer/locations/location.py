@@ -4,6 +4,7 @@ from pathlib import Path
 import os, sys
 import json
 from dataclasses import dataclass, asdict
+import logging
 
 import geopandas as gpd
 import pandas as pd
@@ -50,19 +51,26 @@ class Location:
         self.universe_path = abs_universe_path
     
         # Geometry - ensure centroid is 4326 somehow
-        self.geometry = LocationGeometry(location_id=location_id, centroid=(centroid.x, centroid.y))
+        self.geometry = LocationGeometry(location_id=location_id, centroid=(centroid.x, centroid.y)) or None
         
         # Load Imagery
-        self.imagery_paths:Dict[str, Optional[Path]] = self.load_imagery(self.years)
+        self.imagery_paths:Dict[str, Optional[Path]] = self.load_imagery(self.years) or None
 
         # Load Documents
-        self.documents:gpd.GeoDataFrame = self.load_documents()
+        try:
+            self.documents:gpd.GeoDataFrame = self.load_documents()
+        except Exception as e:
+            self.documents:gpd.GeoDataFrame = None
 
         # Load citydata Projects
         self.citydata_projects = self.load_citydata_projects()
         
+        
         # Load citydata Features
-        self.citydata_features = self.load_citydata_features()
+        try:
+            self.citydata_features = self.load_citydata_features() or None
+        except Exception as e:
+            self.citydata_features = None
 
         # Results Placeholder
         self.results = {}
@@ -181,7 +189,7 @@ class Location:
             "universe_path": str(self.universe_path),  # str
             "imagery_paths": imgs,                     # dict[str, str|None]
             "geometry_json": self.geometry.model_dump_json(),  # str
-            "project_docs": self.documents[['project_id', 'year','name', 'relative_paths']].to_json()
+            #"project_docs": self.documents[['project_id', 'year','name', 'relative_paths']].to_json()
         }
     
     # Serialization
