@@ -1,0 +1,18 @@
+export NYC_GEOCLIENT_SUBSCRIPTION_KEY="your-key"
+# or pass --key on the command line
+
+# 1) Normalize inputs
+
+python normalize_inputs_v2.py \
+  --ndjson "./data/gemini_output2 2.ndjson" \
+  --docmap "./data/documents_df.csv" \
+  --out "./data/nyc_geoclient_ready_v2.csv"
+
+# 2) Batch geocode
+python geoclient_batch.py \
+  --input "./data/nyc_geoclient_ready_v2.csv" \
+  --out "./data/geocoded_results.csv" \
+  --cache "./data/geocode_cache.jsonl" \
+  --rps 3
+# or
+python geoclient_batch.py --key "your-key" --input ... --out ...
