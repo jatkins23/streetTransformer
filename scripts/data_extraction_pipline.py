@@ -1,3 +1,4 @@
+# THIS DOESN"T WORK EITHER
 
 # Example Usage
 # python scripts/data_extraction_pipline.py -y 2016 -z 20 --location "Downtown Brooklyn, New York, USA" --outfile data/test_runs/downtown_bk/imagery/processed/refs/image_refs_z20_2016.csv
@@ -10,18 +11,13 @@ from dotenv import load_dotenv
 import argparse
 
 
-# Import from src
-script_dir = Path(__file__).resolve().parent
-project_root = script_dir.parent 
-sys.path.append(str(project_root))
-
-#from preprocessing.load_intersections import load_location
-import preprocessing.imagery.join_and_stitch as jas
+#from preprocessing.data_load.load_intersections import load_location
+import st_preprocessing.imagery.join_and_stitch as jas
 
 load_dotenv(override=True)
 DATA_PATH_STEM = Path(str(os.getenv('DATA_PATH')))
 
-def run_pipeline(location, year, z_level):
+def run_pipeline(location, year, z_level, outfile=None):
     STATIC_REL_PATH = f'imagery/raw_static/z{z_level}/{year}/'
     STATIC_PATH = os.path.join(DATA_PATH_STEM, STATIC_REL_PATH)
 
@@ -51,7 +47,7 @@ def parse_args():
     parser.add_argument('--location', type=str, required=True)
     parser.add_argument('-z','--z_level', type=int, default=20)
     parser.add_argument('-y','--year', type=int,default=2024)
-    parser.add_argument('-o','--outfile', type=str)
+    parser.add_argument('-o','--outfile', type=str, default=None)
 
     args = parser.parse_args()
 

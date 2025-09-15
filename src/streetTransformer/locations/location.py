@@ -3,29 +3,34 @@ from typing import Optional, List, Dict, Tuple
 from pathlib import Path
 import os, sys
 import json
+from dataclasses import dataclass, asdict
+import logging
 
 import geopandas as gpd
 import pandas as pd
-from pydantic import BaseModel
 
-PROJECT_PATH = Path(__file__).resolve().parent.parent.parent.parent
-print(f'Treating "{PROJECT_PATH}" as `project_path`')
-sys.path.append(PROJECT_PATH)
+from ..config.constants import UNIVERSES_PATH, YEARS
 
-UNIVERSE_NAME = 'caprecon3'
-UNIVERSE_PATH = PROJECT_PATH / 'src/streetTransformer/data/universes/' / UNIVERSE_NAME
-YEARS = os.listdir(UNIVERSE_PATH / 'imagery')
-
-def _generate_universe_path(universe_name:str) -> Path:
-    universe_path = PROJECT_PATH / 'src/streetTransformer/data/universes' / universe_name
+def _generate_universe_path(universe_name:str, universes_path:Path) -> Path:
+    universe_path = universes_path / universe_name
     if universe_path.exists():
         return universe_path
     else:
         raise FileNotFoundError(f"{universe_path} doesn't exist!")
+    
+def _read_filtered_json(path:Path, location_id):
+    rows = []
+    with open(path, "r") as f:
+        for line in f:
+            row = json.loads(line)
+            if row.get("location_id") == location_id:
+                rows.append(row)
+    return rows
 
 from shapely.geometry import Point
 from .location_geometry import LocationGeometry
 
+@dataclass
 class Location: 
     def __init__(self, 
                  location_id:int, 
@@ -34,29 +39,41 @@ class Location:
                  centroid:Point, 
                  years:List[int|str]=YEARS, 
                  universe_path:Optional[Path]=None):
-        self.location_id:int = location_id
-        self.universe_name:str = universe_name
+        self.centroid:Point         = centroid       
+        self.location_id:int        = location_id
+        self.universe_name:str      = universe_name
         self.crossstreets:List[str] = crossstreets
-        self.years:List[str] = [str(y) for y in years]
+        self.years:List[str]        = [str(y) for y in years]
 
         # Universe Path
-        abs_universe_path = universe_path or _generate_universe_path(self.universe_name)
-        self.universe_path:Path = abs_universe_path.relative_to(PROJECT_PATH)
+        abs_universe_path = universe_path or _generate_universe_path(self.universe_name, UNIVERSES_PATH)
+        #self.universe_path:Path = abs_universe_path.relative_to(PROJECT_PATH)
+        self.universe_path = abs_universe_path
     
         # Geometry - ensure centroid is 4326 somehow
-        self.geometry = LocationGeometry(centroid=(centroid.x, centroid.y))
+        self.geometry = LocationGeometry(location_id=location_id, centroid=(centroid.x, centroid.y)) or None
         
         # Load Imagery
-        self.imagery_paths:Dict[str, Optional[Path]] = self.load_imagery(self.years)
+        self.imagery_paths:Dict[str, Optional[Path]] = self.load_imagery(self.years) or None
 
         # Load Documents
-        self.documents:gpd.GeoDataFrame = self.load_documents()
+        try:
+            self.documents:gpd.GeoDataFrame = self.load_documents()
+        except Exception as e:
+            self.documents:gpd.GeoDataFrame = None
 
         # Load citydata Projects
         self.citydata_projects = self.load_citydata_projects()
         
+        
         # Load citydata Features
-        self.citydata_features = self.load_citydata_features()
+        try:
+            self.citydata_features = self.load_citydata_features() or None
+        except Exception as e:
+            self.citydata_features = None
+
+        # Results Placeholder
+        self.results = {}
     
     # Dunders
     def __repr__(self):
@@ -99,7 +116,7 @@ class Location:
     
     def load_documents(self, years:List[str]=YEARS, documents_gdf_path:Optional[Path]=None) -> gpd.GeoDataFrame|None:
         if documents_gdf_path is None:
-            documents_gdf_path = self.universe_path / 'documents.feather'
+            documents_gdf_path = self.universe_path / 'documents.parquet'
         
         if not documents_gdf_path.exists():
             raise Warning(f'"{documents_gdf_path}" not found!')
@@ -107,7 +124,7 @@ class Location:
         else:
             # load the geocoded documents
             #documents_gdf = gpd.read_file(documents_gdf_path)
-            documents_gdf = gpd.read_feather(documents_gdf_path)
+            documents_gdf = gpd.read_parquet(documents_gdf_path)
 
             # Create buffer
             # bbox_p = Point(self.geometry.centroid_p).buffer(1000)
@@ -132,7 +149,7 @@ class Location:
             fts_files = os.listdir(fts_year_path)
             
             for file in fts_files:
-                features_file = gpd.read_feather(fts_year_path / file)
+                features_file = gpd.read_parquet(fts_year_path / file)
                 features_file_in_location = features_file[features_file['location_id'] == self.location_id]
                 features[year][Path(file).stem] = features_file_in_location
 
@@ -150,19 +167,47 @@ class Location:
     def load_citydata_projects(self):
         return {}
     
-    # Output functions
+
+# Example usage
+    def load_results_data(self, file_path:Path, model_name:str):
+        # Reads in an ndjson that 
+        try:
+            data = _read_filtered_json(file_path, self.location_id)
+            self.results[model_name] = data
+        except Exception as e:
+            print(e)
+    
+    # Serialization
     def to_dict(self) -> dict:
         # imagery_paths: Dict[str, Optional[Path]] -> Dict[str, Optional[str]]
-        img = {k: (None if v is None else str(v)) for k, v in self.imagery_paths.items()}
+        imgs = {k: (None if v is None else str(v)) for k, v in self.imagery_paths.items()}
         return {
             "location_id": self.location_id,
             "universe_name": self.universe_name,
             "crossstreets": self.crossstreets,         # list[str]
             # "years": self.years,                       # list[str]
             "universe_path": str(self.universe_path),  # str
-            "imagery_paths": img,                     # dict[str, str|None]
+            "imagery_paths": imgs,                     # dict[str, str|None]
             "geometry_json": self.geometry.model_dump_json(),  # str
-            "project_docs": self.documents[['project_id', 'year','name', 'relative_paths']].to_json()
+            #"project_docs": self.documents[['project_id', 'year','name', 'relative_paths']].to_json()
+        }
+    
+    # Serialization
+    def to_db(self) -> dict:
+        # imagery_paths: Dict[str, Optional[Path]] -> Dict[str, Optional[str]]
+        imgs = {k: (None if v is None else str(v)) for k, v in self.imagery_paths.items()}
+        return {
+            "location_id"   : self.location_id,
+            "universe_name" : self.universe_name,
+            "crossstreets"  : self.crossstreets,         # list[str]
+            "universe_path" : str(self.universe_path),  # str
+            "imagery_paths" : imgs,                     # dict[str, str|None]
+            "geometry"      : self.centroid,
+            #"geometry_id"   : 0,
+            #"geometry_obj"  : self.geometry.model_dump_json(),  # str
+            "project_docs"  : self.documents[['project_id', 'year','name', 'relative_paths']].to_json(),
+            'features'      : self.citydata_features,
+            'features_summary': self.citydata_features_summary
         }
     
     # Manipulation
@@ -211,9 +256,23 @@ class Location:
         
         return compare_data
         
+# from geoalchemy2 import Geometry
+# from sqlalchemy import Column, Integer, String, ARRAY, JSON, create_engine
+# #from sqlalchemy.ext.declarative import declarative_base
+# from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
+# Base = declarative_base()
 
-    
+# class LocationDB(Base):
+#     __tablename__ = 'locations'
 
-
-
+#     id = Column(Integer, primary_key = True)
+#     location_id     = Column(Integer, primary_key=True)
+#     universe_name   = Column(String)
+#     crossstreets    = Column(ARRAY(String))
+#     universe_path   = Column(String)
+#     imagery_paths   = Column(JSON)
+#     centroid        = Column(Geometry())
+#     geometry_id     = Column(Integer)
+#     geometry_obj    = Column(JSON)
+#     project_docs    = Column(JSON)

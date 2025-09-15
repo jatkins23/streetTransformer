@@ -3,27 +3,26 @@ import sys
 
 import geopandas as gpd
 
-# Set Local environment
-project_path = Path(__file__).resolve().parent.parent
-print(f'Treating "{project_path}" as `project_path`')
-sys.path.append(str(project_path))
-
 # Local imports
-from src.streetTransformer.locations.location import Location
+from ..locations.location import Location
 
 def get_compare_data_for_location_id_years(locations_gdf: gpd.GeoDataFrame, location_id:int, start_year:int|str, end_year:int|str, universe_name:str):
+    print('here')
     row = locations_gdf[locations_gdf['location_id'] == location_id].iloc[0].T.to_dict()
+    
+    print(row)
 
     temp_location = Location(
-            location_id=row['location_id'],
-            universe_name=universe_name,
-            crossstreets=row['crossstreets'],
-            centroid=row['geometry']
-        )
+        location_id=row['location_id'],
+        universe_name=universe_name,
+        crossstreets=row['crossstreets'],
+        centroid=row['geometry']
+    )
+    print('now here')
+    
     
     # Comparison
     comparison = temp_location.compare_years(start_year, end_year)
-
     return comparison
 
 def get_image_compare_data(locations_gdf: gpd.GeoDataFrame, location_id:int, start_year:int|str, end_year:int|str, universe_name:str):

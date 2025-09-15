@@ -7,12 +7,8 @@ import sys
 from typing import List, Dict, Tuple, Optional
 import io
 
-
-root_dir = Path(__file__).resolve().parent.parent.parent
-print(f'Treating "{root_dir}" as `root_dir`')
-sys.path.append(str(root_dir))
-from config.constants import REF_FILE_RELATIVE_PATH, REF_FILE_PATTERN, AVAILABLE_ZLEVELS, AVAILABLE_YEARS
-from utils.validators import check_value
+from ...config.constants import REF_FILE_RELATIVE_PATH, REF_FILE_PATTERN, ZLEVELS, YEARS
+from ...utils.validators import check_value
 
 import pandas as pd
 
@@ -30,8 +26,8 @@ def get_imagery_reference_path(root_path:Path, zlevel:int, year:int) -> Path:
     Returns:
         Path: A path to the csv file
     """
-    check_value(zlevel, AVAILABLE_ZLEVELS, 'zlevel')
-    check_value(year, AVAILABLE_YEARS, 'year')
+    check_value(zlevel, ZLEVELS, 'zlevel')
+    check_value(year, YEARS, 'year')
     
     file_name = REF_FILE_PATTERN.format(zlevel=zlevel, year=year)
     

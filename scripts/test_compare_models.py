@@ -16,10 +16,10 @@ project_root = script_dir.parent  # assuming scripts and src are siblings
 print(f"Treating '{project_root}' as `project_root`")
 sys.path.append(str(project_root))
 
-from src.streetTransformer.llms.run_llm_model import run_model
-from src.streetTransformer.viz.compare_images import create_comparison_figure, load_images, save_figure
+from streettransformer.llms.run_llm_model import run_model
+from streettransformer.viz.compare_images import create_comparison_figure, load_images, save_figure
 
-from src.streetTransformer.utils.image_paths import assemble_location_imagery
+from streettransformer.utils.image_paths import assemble_location_imagery
 import matplotlib.pyplot as plt
 
 def parse_args():

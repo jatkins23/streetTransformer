@@ -8,11 +8,22 @@ wheels/
 
 # Virtual environments
 .venv
+.virtual_documents
+*.DS_Store
+.vscode
 
 # Data
 data
 cache
+zzz_archive
+*.duckdb
+db/
+data_oai_files/
 
 # Environments
 .env
 tile2net
+
+# Other
+notes/
+configs/

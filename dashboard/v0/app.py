@@ -19,17 +19,13 @@ from callbacks.timeline_callbacks import register_timeline_callbacks
 from callbacks.compare_callbacks import register_compare_callbacks
 
 # Set root path
-script_dir = Path(__file__).resolve()
-project_root = script_dir.parent.parent.parent
-print(f'Treating "{project_root}" as `project_root`')
-sys.path.append(str(project_root))
 
 # Import Local Modules
-from src.streetTransformer.utils.image_paths import get_imagery_reference_path, assemble_location_imagery
-from src.streetTransformer.config.constants import DATA_PATH, REF_FILE_RELATIVE_PATH, AVAILABLE_YEARS
-from scripts.test_compare_models import run_all_models
-from src.streetTransformer.viz.compare_images import create_comparison_figure
-from src.streetTransformer.viz.utils import load_images
+from streettransformer.utils.image_paths import get_imagery_reference_path, assemble_location_imagery
+from streettransformer.config.constants import DATA_PATH, REF_FILE_RELATIVE_PATH, AVAILABLE_YEARS
+from ..scripts.test_compare_models import run_all_models
+from streettransformer.viz.compare_images import create_comparison_figure
+from streettransformer.viz.utils import load_images
 
 location_15_images = assemble_location_imagery(15, DATA_PATH, AVAILABLE_YEARS, 20)
 
