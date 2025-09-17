@@ -89,7 +89,7 @@ FOCUS = {
     'document_feature_tagger'   : f"Ignore geographic details, street names, references to agencies - focus exclusively on captial reconstruction changes to the streetscape.",
     'document_summarizer'       : f"Ignore geographic details, street names, references to agencies - focus exclusively on captial reconstruction changes to the streetscape using lingo of a Transportation Engineer including: {features_list}",
     'document_image_linker'     : "Ignore any refereces to geography. You are solely looking at the changes in the streetscape.",
-    'image_change_dater'        : f"Limit this analysis to only capital reconstruction features including: {features_list}). Use"
+    'image_change_dater'        : f"Limit this analysis to only capital reconstruction features including: {features_list})."
 }
 
 ASK = "Please respond in a well formatted json exclusively with {n_columns} tags:\n{columns_joined}"
