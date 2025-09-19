@@ -5,7 +5,7 @@ import os
 from typing import Optional
 
 from streettransformer.llms.oai3 import bulk_query_on_df
-from streettransformer.llms.models.queries import QUERIES
+from streettransformer.llms.queries import QUERIES
 
 OAI_PATH = Path('data_oai_files')
 

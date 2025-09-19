@@ -4,7 +4,7 @@ import geopandas as gpd
 import argparse
 
 from st_preprocessing.config import UNIVERSES_PATH
-from st_preprocessing.imagery.download_imagery2 import download_and_stitch_gdf
+from st_preprocessing.imagery.download_imagery import download_and_stitch_gdf
 from st_preprocessing.preprocess import save_locations # TODO: this will be moved to a better location
 
 

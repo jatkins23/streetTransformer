@@ -24,5 +24,5 @@
  
     #print(count_features_by_location(node_buffers, cleaned_gdfs_p['bike_rtes'], feature_shorthand='bike'))
 
-Todo:
-- move any constants to a config or maybe into constants.py?
+# Todo:
+# - move any constants to a config or maybe into constants.py?

@@ -8,7 +8,7 @@ from st_preprocessing.data_load.load_lion import load_lion_default
 
 #from st_preprocessing.citydata.cap_recon_pipeline import gather_capital_projects_for_locations
 from st_preprocessing.data_load.load_lion import load_lion_default
-from st_preprocessing.imagery.download_imagery2 import download_and_stitch_gdf
+from st_preprocessing.imagery.download_imagery import download_and_stitch_gdf
 #from st_preprocessing.preprocess import save_locations # TODO: this will be moved to a better location
 
 

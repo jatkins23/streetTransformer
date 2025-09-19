@@ -6,7 +6,7 @@ import os
 
 from .data_load.load_lion import load_lion_default # TODO: Switch to load_universe using lionsource
 #from citydata.features_pipeline import  # TODO: Switch to load_universe using lionsource
-from .imagery.download_imagery2 import download_and_stitch_gdf
+from .imagery.download_imagery import download_and_stitch_gdf
 
 # -----------------------------
 # Load Config
