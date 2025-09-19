@@ -5,7 +5,7 @@ import geopandas as gpd
 from shapely import from_wkt
 from pyproj import Proj
 
-def load_standard(path:Path, crs:Proj|str|int='EPSG:4326') -> gpd.GeoDataFrame: # TODO: refactor to another file for each?
+def load_standard(path:Path, crs:Proj|str|int='EPSG:4326') -> gpd.GeoDataFrame:
     temp = pd.read_csv(path)
     ret_gdf = gpd.GeoDataFrame(temp, geometry=from_wkt(temp['the_geom']), crs=crs)
     

@@ -66,12 +66,12 @@ QUERY_RUNS = [
         outfile_name = 'summarizer-sidebyside-4o',
         model = 'gpt-4o',
     ),
-    # QueryRun( # Describer - Document - 4o
-    #     query_name = 'document_summarizer',
-    #     input_file = 'document_describers',
-    #     outfile_name = 'summarizer-document-4o',
-    #     model = 'gpt-4o',
-    # ),
+    QueryRun( # Describer - Document - 4o
+        query_name = 'document_summarizer',
+        input_file = 'document_describers',
+        outfile_name = 'summarizer-document-4o',
+        model = 'gpt-4o',
+    ),
     QueryRun( # FeatureTagger - Document - 4o
         query_name = 'document_feature_tagger',
         input_file = 'document_describers',

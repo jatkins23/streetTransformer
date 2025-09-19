@@ -17,6 +17,9 @@ data
 cache
 zzz_archive
 *.duckdb
+*.parquet
+Modelfile_*
+*.pdf
 db/
 data_oai_files/
 
@@ -27,3 +30,6 @@ tile2net
 # Other
 notes/
 configs/
+zzz_*
+
+
